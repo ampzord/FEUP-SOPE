@@ -26,16 +26,16 @@ double start_time;
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
-    printf("Usage: gerador <number of orders> <max usage time> <time unit system>\n");
+    printf("Usage: gerador <number of orders> <max usage time>\n");
     printf("Number of orders : is the total number of orders generated throughout the execution of the program. If that number is reached the program stops.\n");
     printf("Max usage time : is the maximum time a user can stay inside a sauna.\n\n");
 }
 
 char* createOrderFifo() {
-    char* myfifo = "/tmp/entrada";
+    char* ordFifo = "/tmp/entrada";
     //to change later, depending on what this fifo will do
-    mkfifo(myfifo, 0222);
-    return myfifo;
+    mkfifo(ordFifo, 0222);
+    return ordFifo;
 }
 
 char* receiveRejectedFifo() {
@@ -104,6 +104,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&tv, NULL);
     start_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
 
+    /* Parse command-line arguments to global variables */
     max_number_orders = atoi(argv[1]);
     max_usage_time = atoi(argv[2]);
 
