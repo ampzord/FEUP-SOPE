@@ -43,11 +43,22 @@ char* receiveRejectedFifo() {
     return rejectedFifo;
 }
 
+//Get number of digits of number
+int findn(int num)
+{
+    char snum[100];
+    sprintf(snum, "%d", num);
+    return strlen(snum);
+}
+
 void* threadOrders(void* arg)
 {
     int fd_order_fifo;
     char* orderFifo = (char*) arg;
     fd_order_fifo = open(orderFifo, O_WRONLY);
+    
+    int maxIdDigits = findn(max_number_orders);
+    int maxUsageDigits = findn(max_usage_time);
 
     for (size_t i = 0; i < max_number_orders; i++) {
 
@@ -78,9 +89,9 @@ void* threadOrders(void* arg)
 
         fprintf(fp_register, "%.2f - ", delta_time);
         fprintf(fp_register, "%d - ", gettid());
-        fprintf(fp_register, "%d: ", ord.serial_number);
+        fprintf(fp_register, "%*d: ", maxIdDigits,ord.serial_number);
         fprintf(fp_register, "%c ", ord.gender);
-        fprintf(fp_register, "%d ", ord.time_spent);
+        fprintf(fp_register, "%*d ", maxUsageDigits,ord.time_spent);
         fprintf(fp_register, "PEDIDO\n");
     }
 
