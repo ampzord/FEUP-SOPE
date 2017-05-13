@@ -34,12 +34,12 @@ void printUsageMessage() {
 char* createOrderFifo() {
     char* ordFifo = "/tmp/entrada";
     //to change later, depending on what this fifo will do
-    mkfifo(ordFifo, 0222);
+    mkfifo(ordFifo, 0660);
     return ordFifo;
 }
 
 char* receiveRejectedFifo() {
-    char* rejectedFifo = "tmp/rejeitados";
+    char* rejectedFifo = "/tmp/rejeitados";
     return rejectedFifo;
 }
 
@@ -76,7 +76,7 @@ void* threadOrders(void* arg)
 
         /* Write struct to order fifo */
 
-        write(fd_order_fifo, &ord, sizeof(ord));
+        //write(fd_order_fifo, &ord, sizeof(ord));
 
         /* Write messages to register */
 
@@ -121,7 +121,23 @@ int main(int argc, char *argv[]) {
 
     char *orderFifo = createOrderFifo();
     char *rejectedFifo = receiveRejectedFifo();
+    
+    /* TESTING CODE */
+    sleep(3);
+    printf("Writing FIFO\nw");
+    int fd_order_fifo = open(orderFifo, O_WRONLY);
 
+    struct Order ord;
+    ord.gender = 'M';
+    ord.time_spent = 16;
+    ord.serial_number = 14;
+    ord.rejected = 12;
+    write(fd_order_fifo, &ord, sizeof(ord));
+    //write(fd_order_fifo, "Hello\0", 6);
+    close(fd_order_fifo);
+    sleep(2);
+    /* END OF TESTING CODE */
+    
     char path_reg[16];
     sprintf(path_reg, "/tmp/ger.%d\n", getpid());
 

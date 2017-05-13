@@ -4,8 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h> /* errno */
+#include <fcntl.h> /* O_RDONLY O_WRONLY */
 
 #include "type.h"
+
 
 extern int errno;
 unsigned int number_seats;
@@ -16,15 +18,32 @@ void printUsageMessage() {
     printf("Number of seats : is the total number of orders generated throughout the execution of the program. If that number is reached the program stops.\n\n");
 }
 
+int readline(int fd, char *str) {
+    int n;
+    do {
+        n = read(fd,str,1);
+    }
+    while (n>0 && *str++ != '\0');
+    return (n>0);
+} 
+
+int readOrder(int fd, struct Order *ord) {
+    int n;
+    n = read(fd,ord,sizeof(ord));
+    printf("readorder: %d\n", n);
+    sleep(1);
+    return n;
+} 
+
 char* createRejectedFifo() {
     char* rejFifo = "/tmp/rejeitados";
     //to change later, depending on what this fifo will do
-    mkfifo(rejFifo, 0222);
+    mkfifo(rejFifo, 0660);
     return rejFifo;
 }
 
 char* receiveOrderFifo() {
-    char* orderFifo = "tmp/entrada";
+    char* orderFifo = "/tmp/entrada";
     return orderFifo;
 }
 
@@ -40,6 +59,23 @@ int main(int argc, char *argv[]) {
 
     char* orderFifo = receiveOrderFifo();
     char* rejectedFifo = createRejectedFifo();
-
+    
+    /* TESTING CODE */
+    int fd, messagelen, i;
+    char str[100];
+    do
+    {
+        printf("Oppening FIFO...\n");
+        fd=open(orderFifo,O_RDONLY | O_NONBLOCK);
+        if (fd==-1) sleep(1);
+    }
+    while (fd==-1);
+    printf("FIFO found\n");
+    struct Order ord;
+    while(!readOrder(fd, &ord));
+    printf("Order:\nSerialNo: %d\nGender: %c\nTime: %d\nRejected: %d\n", ord.serial_number, ord.gender, ord.time_spent, ord.rejected);
+    /* END OF TESTING CODE */
+    
+    unlink(rejectedFifo);
     return 0;
 }
