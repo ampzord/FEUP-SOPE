@@ -63,16 +63,16 @@ void* threadOrders(void* arg)
     for (size_t i = 0; i < max_number_orders; i++) {
 
         /* Generate random orders */
-        struct Order ord;
+        Order* ord = malloc(sizeof(Order));
 
         if (rand() % 2 == 0) {
-            ord.gender = 'M';
+            ord->gender = 'M';
         } else {
-            ord.gender = 'F';
+            ord->gender = 'F';
         }
 
-        ord.time_spent = rand() % max_usage_time + 1;
-        ord.serial_number = ++total_orders;
+        ord->time_spent = rand() % max_usage_time + 1;
+        ord->serial_number = ++total_orders;
 
         /* Write struct to order fifo */
 
@@ -89,9 +89,9 @@ void* threadOrders(void* arg)
 
         fprintf(fp_register, "%.2f - ", delta_time);
         fprintf(fp_register, "%d - ", gettid());
-        fprintf(fp_register, "%*d: ", maxIdDigits,ord.serial_number);
-        fprintf(fp_register, "%c ", ord.gender);
-        fprintf(fp_register, "%*d ", maxUsageDigits,ord.time_spent);
+        fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
+        fprintf(fp_register, "%c ", ord->gender);
+        fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
         fprintf(fp_register, "PEDIDO\n");
     }
 
@@ -127,12 +127,12 @@ int main(int argc, char *argv[]) {
     printf("Writing FIFO\nw");
     int fd_order_fifo = open(orderFifo, O_WRONLY);
 
-    struct Order ord;
-    ord.gender = 'M';
-    ord.time_spent = 16;
-    ord.serial_number = 14;
-    ord.rejected = 12;
-    write(fd_order_fifo, &ord, sizeof(ord));
+    Order* ord = malloc(sizeof(Order));
+    ord->gender = 'M';
+    ord->time_spent = 16;
+    ord->serial_number = 14;
+    ord->rejected = 12;
+    write(fd_order_fifo, ord, sizeof(Order));
     //write(fd_order_fifo, "Hello\0", 6);
     close(fd_order_fifo);
     sleep(2);

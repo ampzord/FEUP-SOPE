@@ -29,7 +29,8 @@ int readline(int fd, char *str) {
 
 int readOrder(int fd, struct Order *ord) {
     int n;
-    n = read(fd,ord,sizeof(ord));
+
+    n = read(fd,ord,sizeof(Order));
     printf("readorder: %d\n", n);
     sleep(1);
     return n;
@@ -71,9 +72,19 @@ int main(int argc, char *argv[]) {
     }
     while (fd==-1);
     printf("FIFO found\n");
-    struct Order ord;
-    while(!readOrder(fd, &ord));
-    printf("Order:\nSerialNo: %d\nGender: %c\nTime: %d\nRejected: %d\n", ord.serial_number, ord.gender, ord.time_spent, ord.rejected);
+    Order* ord = malloc(sizeof(Order));
+
+    //while(!readOrder(fd, ord));
+    while(1) {
+        int n;
+        n = read(fd,ord,sizeof(Order));
+        printf("readorder: %d\n", n);
+
+        printf("Order:\nSerialNo: %d\nGender: %c\nTime: %d\nRejected: %d\n", ord->serial_number, ord->gender, ord->time_spent, ord->rejected);
+    }
+
+
+
     /* END OF TESTING CODE */
     
     unlink(rejectedFifo);
