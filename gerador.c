@@ -16,6 +16,7 @@
 #define gettid() syscall(SYS_gettid)
 
 #include "type.h"
+#include "consts.h"
 
 extern int errno;
 unsigned int total_orders = 0;
@@ -31,18 +32,6 @@ void printUsageMessage() {
     printf("Max usage time : is the maximum time a user can stay inside a sauna.\n\n");
 }
 
-char* createOrderFifo() {
-    char* ordFifo = "/tmp/entrada";
-    //to change later, depending on what this fifo will do
-    mkfifo(ordFifo, 0660);
-    return ordFifo;
-}
-
-char* receiveRejectedFifo() {
-    char* rejectedFifo = "/tmp/rejeitados";
-    return rejectedFifo;
-}
-
 //Get number of digits of number
 int findn(int num)
 {
@@ -51,14 +40,11 @@ int findn(int num)
     return strlen(snum);
 }
 
-void* threadOrders(void* arg)
-{
-    int fd_order_fifo;
-    char* orderFifo = (char*) arg;
-    fd_order_fifo = open(orderFifo, O_WRONLY);
-    
+void* threadOrders()
+{   
     int maxIdDigits = findn(max_number_orders);
     int maxUsageDigits = findn(max_usage_time);
+    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
     for (size_t i = 0; i < max_number_orders; i++) {
 
@@ -70,16 +56,14 @@ void* threadOrders(void* arg)
         } else {
             ord->gender = 'F';
         }
-
         ord->time_spent = rand() % max_usage_time + 1;
         ord->serial_number = ++total_orders;
-
-        /* Write struct to order fifo */
-
-        //write(fd_order_fifo, &ord, sizeof(ord));
-
+        
+        /* Write messages to the Order FIFO */
+        write(fd_order_fifo, ord, sizeof(Order));
+        
+        
         /* Write messages to register */
-
         pthread_t id = pthread_self();
 
         struct timeval tv;
@@ -93,24 +77,34 @@ void* threadOrders(void* arg)
         fprintf(fp_register, "%c ", ord->gender);
         fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
         fprintf(fp_register, "PEDIDO\n");
+        
+        /* Cleanup order */
+        free(ord);
+        ord = NULL;
+        
+        sleep(1);
     }
-
     close(fd_order_fifo);
 }
 
-pthread_t generateOrders(char* orderFifo) {
+pthread_t generateOrders() {
     pthread_t pth;
-    pthread_create(&pth,NULL,threadOrders,&orderFifo);
+    pthread_create(&pth,NULL,threadOrders,NULL);
     return pth;
 }
 
 int main(int argc, char *argv[]) {
-
+    /* Validates arguments */
     if (argc != 3) {
         printUsageMessage();
         exit(1);
     }
 
+    /* Defines a differend random seed */
+    int seed = time(NULL);
+    srand(seed);
+    
+    /* Struct to calculate the time spent */
     struct timeval tv;
     gettimeofday(&tv, NULL);
     start_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
@@ -119,39 +113,25 @@ int main(int argc, char *argv[]) {
     max_number_orders = atoi(argv[1]);
     max_usage_time = atoi(argv[2]);
 
-    char *orderFifo = createOrderFifo();
-    char *rejectedFifo = receiveRejectedFifo();
+    /* Create Order FIFO */
+    mkfifo(ORDER_FIFO, 0660);
     
-    /* TESTING CODE */
-    sleep(3);
-    printf("Writing FIFO\nw");
-    int fd_order_fifo = open(orderFifo, O_WRONLY);
-
-    Order* ord = malloc(sizeof(Order));
-    ord->gender = 'M';
-    ord->time_spent = 16;
-    ord->serial_number = 14;
-    ord->rejected = 12;
-    write(fd_order_fifo, ord, sizeof(Order));
-    //write(fd_order_fifo, "Hello\0", 6);
-    close(fd_order_fifo);
-    sleep(2);
-    /* END OF TESTING CODE */
-    
+    /* Create register file */
     char path_reg[16];
     sprintf(path_reg, "/tmp/ger.%d\n", getpid());
-
     fp_register = fopen(path_reg, "w");
 
-    pthread_t gen_pth = generateOrders(orderFifo);
+    /* Generate orders */
+    pthread_t gen_pth = generateOrders();
     //receiveRejected();
 
     pthread_join(gen_pth, NULL);
-    //pthread_join(receive)
 
     /* unlink fifos */
-    unlink(orderFifo);
+    close(ORDER_FIFO);
+    unlink(ORDER_FIFO);
 
+    /* Close register file */    
     fclose(fp_register);
 
     return 0;
