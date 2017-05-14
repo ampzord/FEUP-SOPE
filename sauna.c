@@ -13,16 +13,6 @@
 #include "type.h"
 #include "consts.h"
 
-typedef struct {
-    pthread_t pth;
-    int idx;
-} SeatThread;
-
-typedef struct {
-    int idx;
-    unsigned int time_ms;
-} ThreadArg;
-
 extern int errno;
 unsigned int number_seats;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to update seat values
@@ -30,7 +20,6 @@ pthread_mutex_t mut_add = PTHREAD_MUTEX_INITIALIZER; // Mutex to assign seat
 SeatThread *seats_threads = NULL; // Array to hold all the seat threads
 char curr_gender; // Char to hold the current type
 
-struct timeval tv;
 double start_time;
 FILE* fp_register;
 
@@ -43,11 +32,6 @@ void printUsageMessage() {
     printf("Number of seats : is the total number of orders generated throughout the execution of the program. If that number is reached the program stops.\n\n");
 }
 
-int readOrder(int fd, Order *ord) {
-    int n;
-    n = read(fd,ord,sizeof(Order));
-    return n;
-}
 
 int getEmptySeat() {
     pthread_mutex_lock(&mut);
@@ -137,6 +121,8 @@ pthread_t acceptOrder(Order *ord, int idx) {
 
 void rejectOrder(Order *ord) {
 
+    int fd_rejected_fifo = open(REJECTED_FIFO, O_WRONLY);
+
     /* Write messages to register */
 
     /* Get time between requests */
@@ -154,6 +140,12 @@ void rejectOrder(Order *ord) {
     ord->rejected++;
     printf("Rejected because current gender is %c and requested %c\n", curr_gender, ord->gender);
     // TODO: Send rejected order back
+    // TODO: do I need to check if its the 3rd time ? I believe its in rejectedThread() you check
+
+    /* Write struct to rejected fifo */
+    write(fd_rejected_fifo, ord, sizeof(Order));
+
+    close(fd_rejected_fifo);
 }
 
 void processOrder(Order *ord) {

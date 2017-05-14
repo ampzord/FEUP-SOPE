@@ -36,7 +36,7 @@ void* threadOrders()
     int maxUsageDigits = findn(max_usage_time);
     int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
-    /*Send print constraints to Sauna*/
+    /* Send print constraints to Sauna*/
     write(fd_order_fifo, &maxIdDigits,sizeof(maxIdDigits));
     write(fd_order_fifo, &maxUsageDigits,sizeof(maxUsageDigits));
 
@@ -64,7 +64,7 @@ void* threadOrders()
         double delta_time = (end_time - start_time) / 1000;
 
         fprintf(fp_register, "%.2f - ", delta_time);
-        //change from %d to %ld to remove warning print to long int
+        //changed from %d to %ld to remove warning print to long int
         fprintf(fp_register, "%ld - ", gettid());
         fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
         fprintf(fp_register, "%c ", ord->gender);
@@ -81,9 +81,57 @@ void* threadOrders()
     return NULL;
 }
 
+
+void processRejectedOrder(Order* ord) {
+
+    /* Get time between requests */
+    gettimeofday(&tv, NULL);
+    double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
+    double delta_time = (end_time - start_time) / 1000;
+
+    fprintf(fp_register, "%.2f - ", delta_time);
+    fprintf(fp_register, "%ld - ", gettid());
+    fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
+    fprintf(fp_register, "%c ", ord->gender);
+    fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
+    fprintf(fp_register, "REJEITADOS\n");
+
+
+    //TODO: IF REJECTED < 3 -> SEND TO GENERATE THREAD
+    //TODO: ELSE -> DISCARD
+
+}
+
+
+void* rejectedThread()
+{
+    Order* ord = malloc(sizeof(Order));
+
+    int rej_fifo_fd;
+    do
+    {
+        printf("Opening Rejected FIFO...\n");
+        rej_fifo_fd=open(ORDER_FIFO ,O_RDONLY);
+        if (rej_fifo_fd == -1) sleep(1);
+    } while (rej_fifo_fd == -1);
+    printf("REJECTED FIFO found\n");
+
+    while(readOrder(rej_fifo_fd, ord)) {
+        processRejectedOrder(ord);
+    }
+
+    return NULL;
+}
+
 pthread_t generateOrders() {
     pthread_t pth;
     pthread_create(&pth,NULL,threadOrders,NULL);
+    return pth;
+}
+
+pthread_t receiveRejected() {
+    pthread_t pth;
+    pthread_create(&pth,NULL,rejectedThread,NULL);
     return pth;
 }
 
@@ -118,7 +166,7 @@ int main(int argc, char *argv[]) {
 
     /* Generate orders */
     pthread_t gen_pth = generateOrders();
-    //receiveRejected();
+    pthread_t rej_pth = receiveRejected();
 
     pthread_join(gen_pth, NULL);
 
