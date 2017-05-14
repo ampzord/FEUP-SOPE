@@ -37,8 +37,8 @@ struct timeval tv;
 double start_time;
 FILE* fp_register;
 
-int maxNumberSeatsDigits;
-
+unsigned int max_number_orders;
+unsigned int max_usage_time;
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
@@ -121,9 +121,9 @@ pthread_t acceptOrder(Order *ord, int idx) {
 
     fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
-    fprintf(fp_register, "%*d: ", maxNumberSeatsDigits, ord->serial_number);
+    fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
-    fprintf(fp_register, "%*d ", maxNumberSeatsDigits, ord->time_spent);
+    fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
     fprintf(fp_register, "SERVIDO\n");
 
     pthread_t pth;
@@ -148,9 +148,9 @@ void rejectOrder(Order *ord) {
 
     fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
-    fprintf(fp_register, "%*d: ", maxNumberSeatsDigits, ord->serial_number);
+    fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
-    fprintf(fp_register, "%*d ", maxNumberSeatsDigits, ord->time_spent);
+    fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
     fprintf(fp_register, "REJEITADO\n");
 
     ord->rejected++;
@@ -169,9 +169,9 @@ void processOrder(Order *ord) {
 
     fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
-    fprintf(fp_register, "%*d: ", maxNumberSeatsDigits, ord->serial_number);
+    fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
-    fprintf(fp_register, "%*d ", maxNumberSeatsDigits, ord->time_spent);
+    fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
     fprintf(fp_register, "RECEBIDO\n");
 
     /* Wait for empty seats */
@@ -203,8 +203,6 @@ int main(int argc, char *argv[]) {
     /* Parse command-line arguments to global variables */
     number_seats = atoi(argv[1]);
 
-    maxNumberSeatsDigits = findn(number_seats);
-
     /* Gets starting time of the program */
     gettimeofday(&tv, NULL);
     start_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
@@ -235,6 +233,10 @@ int main(int argc, char *argv[]) {
     printf("FIFO found\n");
     
     Order* ord = malloc(sizeof(Order));
+
+    /*Read Print constraints*/
+    read(fd,&max_number_orders,sizeof(max_number_orders));
+    read(fd,&max_usage_time,sizeof(max_usage_time));
 
     while(readOrder(fd, ord)) {
         processOrder(ord);
