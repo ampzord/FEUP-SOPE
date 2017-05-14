@@ -10,10 +10,8 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <stdint.h> /*uint */
-#include <sys/syscall.h>
-#include <sys/time.h>
 
-#define gettid() syscall(SYS_gettid)
+#include <sys/time.h>
 
 #include "type.h"
 #include "consts.h"
@@ -30,14 +28,6 @@ void printUsageMessage() {
     printf("Usage: gerador <number of orders> <max usage time>\n");
     printf("Number of orders : is the total number of orders generated throughout the execution of the program. If that number is reached the program stops.\n");
     printf("Max usage time : is the maximum time a user can stay inside a sauna.\n\n");
-}
-
-//Get number of digits of number
-int findn(int num)
-{
-    char snum[100];
-    sprintf(snum, "%d", num);
-    return strlen(snum);
 }
 
 void* threadOrders()
@@ -61,18 +51,17 @@ void* threadOrders()
         
         /* Write messages to the Order FIFO */
         write(fd_order_fifo, ord, sizeof(Order));
-        
-        
-        /* Write messages to register */
-        pthread_t id = pthread_self();
 
-        struct timeval tv;
+        /* Write messages to register */
+        //pthread_t id = pthread_self();
+
         gettimeofday(&tv, NULL);
         double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
         double delta_time = (end_time - start_time) / 1000;
 
         fprintf(fp_register, "%.2f - ", delta_time);
-        fprintf(fp_register, "%d - ", gettid());
+        //change from %d to %ld to remove warning print to long int
+        fprintf(fp_register, "%ld - ", gettid());
         fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
         fprintf(fp_register, "%c ", ord->gender);
         fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
@@ -94,6 +83,7 @@ pthread_t generateOrders() {
 }
 
 int main(int argc, char *argv[]) {
+
     /* Validates arguments */
     if (argc != 3) {
         printUsageMessage();
@@ -104,8 +94,7 @@ int main(int argc, char *argv[]) {
     int seed = time(NULL);
     srand(seed);
     
-    /* Struct to calculate the time spent */
-    struct timeval tv;
+    /* Gets starting time of the program */
     gettimeofday(&tv, NULL);
     start_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
 
@@ -114,7 +103,8 @@ int main(int argc, char *argv[]) {
     max_usage_time = atoi(argv[2]);
 
     /* Create Order FIFO */
-    mkfifo(ORDER_FIFO, 0660);
+    char* orderFIFO = ORDER_FIFO;
+    mkfifo(orderFIFO, 0660);
     
     /* Create register file */
     char path_reg[16];
@@ -128,10 +118,9 @@ int main(int argc, char *argv[]) {
     pthread_join(gen_pth, NULL);
 
     /* unlink fifos */
-    close(ORDER_FIFO);
-    unlink(ORDER_FIFO);
+    unlink(orderFIFO);
 
-    /* Close register file */    
+    /* Close register file */
     fclose(fp_register);
 
     return 0;

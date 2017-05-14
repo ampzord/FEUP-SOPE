@@ -4,6 +4,11 @@
 #include <errno.h> /* errno */
 #include <fcntl.h> /* O_RDONLY O_WRONLY */
 #include <pthread.h>
+#include <unistd.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "type.h"
 #include "consts.h"
@@ -18,12 +23,21 @@ typedef struct {
     unsigned int time_ms;
 } ThreadArg;
 
+enum TYPE {RECEBIDO, REJEITADO, SERVIDO};
+
+
 extern int errno;
 unsigned int number_seats;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to update seat values
 pthread_mutex_t mut_add = PTHREAD_MUTEX_INITIALIZER; // Mutex to assign seat
 SeatThread *seats_threads = NULL; // Array to hold all the seat threads
 char curr_gender; // Char to hold the current type
+
+struct timeval tv;
+double start_time;
+FILE* fp_register;
+
+int maxNumberSeatsDigits;
 
 
 void printUsageMessage() {
@@ -81,7 +95,7 @@ void removeSeatThread(int idx) {
     pthread_mutex_unlock(&mut);
 }
 
-void runOrder(void *arg) {
+void* runOrder(void *arg) {
     /* Parse arguments */
     ThreadArg targ = *((ThreadArg *) arg);
     int idx = targ.idx;
@@ -97,34 +111,80 @@ void runOrder(void *arg) {
 }
 
 pthread_t acceptOrder(Order *ord, int idx) {
+
+    /* Write messages to register */
+
+    /* Get time between requests */
+    gettimeofday(&tv, NULL);
+    double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
+    double delta_time = (end_time - start_time) / 1000;
+
+    fprintf(fp_register, "%.2f - ", delta_time);
+    fprintf(fp_register, "%ld - ", gettid());
+    fprintf(fp_register, "%*d: ", maxNumberSeatsDigits, ord->serial_number);
+    fprintf(fp_register, "%c ", ord->gender);
+    fprintf(fp_register, "%*d ", maxNumberSeatsDigits, ord->time_spent);
+    fprintf(fp_register, "SERVIDO\n");
+
     pthread_t pth;
     unsigned int *time_ms = malloc(sizeof(time_ms));
     ThreadArg *targ = malloc(sizeof(ThreadArg));
     targ->idx = idx;
     targ->time_ms = ord->time_spent;
-    
+
     printf("Starting thread %d during %d\n", idx, targ->time_ms);
     pthread_create(&pth,NULL,runOrder,targ);
     return pth;
 }
 
 void rejectOrder(Order *ord) {
+
+    /* Write messages to register */
+
+    /* Get time between requests */
+    gettimeofday(&tv, NULL);
+    double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
+    double delta_time = (end_time - start_time) / 1000;
+
+    fprintf(fp_register, "%.2f - ", delta_time);
+    fprintf(fp_register, "%ld - ", gettid());
+    fprintf(fp_register, "%*d: ", maxNumberSeatsDigits, ord->serial_number);
+    fprintf(fp_register, "%c ", ord->gender);
+    fprintf(fp_register, "%*d ", maxNumberSeatsDigits, ord->time_spent);
+    fprintf(fp_register, "REJEITADO\n");
+
     ord->rejected++;
     printf("Rejected because current gender is %c and requested %c\n", curr_gender, ord->gender);
-    // TODO: Send rejected order bacl
+    // TODO: Send rejected order back
 }
 
 void processOrder(Order *ord) {
+
+    /* Write messages to register */
+
+    /* Get time between requests */
+    gettimeofday(&tv, NULL);
+    double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
+    double delta_time = (end_time - start_time) / 1000;
+
+    fprintf(fp_register, "%.2f - ", delta_time);
+    fprintf(fp_register, "%ld - ", gettid());
+    fprintf(fp_register, "%*d: ", maxNumberSeatsDigits, ord->serial_number);
+    fprintf(fp_register, "%c ", ord->gender);
+    fprintf(fp_register, "%*d ", maxNumberSeatsDigits, ord->time_spent);
+    fprintf(fp_register, "RECEBIDO\n");
+
     /* Wait for empty seats */
     while (getEmptySeats() == 0) usleep(500*1000);
-    
+
     if (isEmpty()) {
         curr_gender = ord->gender;
     } else if (curr_gender != ord->gender) {
         rejectOrder(ord);
         return;
     }
-    /* Assigns the order to a empty seat */
+
+    /* Assigns the order to an empty seat */
     int idx = getEmptySeat();
     pthread_t pth = acceptOrder(ord, idx);
     SeatThread st;
@@ -143,12 +203,24 @@ int main(int argc, char *argv[]) {
     /* Parse command-line arguments to global variables */
     number_seats = atoi(argv[1]);
 
+    maxNumberSeatsDigits = findn(number_seats);
+
+    /* Gets starting time of the program */
+    gettimeofday(&tv, NULL);
+    start_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
+
+    /* Create register file */
+    char path_reg[16];
+    sprintf(path_reg, "/tmp/bal.%d\n", getpid());
+    fp_register = fopen(path_reg, "w");
+
     /* Array to hold all threads created */ 
     seats_threads = malloc(number_seats * sizeof(SeatThread));
     for (int i = 0; i < number_seats; i++) seats_threads[i].idx = -1;
     
     /* Create Rejected FIFO */
-    mkfifo(REJECTED_FIFO, 0660);
+    char* rejectedFIFO = REJECTED_FIFO;
+    mkfifo(rejectedFIFO, 0660);
     
     /* Frees mutex from possible previous lock */
     pthread_mutex_unlock(&mut);
@@ -175,8 +247,12 @@ int main(int argc, char *argv[]) {
         }
     
     /* Cleanup */
-    unlink(REJECTED_FIFO);
+    unlink(rejectedFIFO);
     free(seats_threads);
     free(ord);
+
+    /* Close register file */
+    fclose(fp_register);
+
     return 0;
 }
