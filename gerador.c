@@ -36,6 +36,10 @@ void* threadOrders()
     int maxUsageDigits = findn(max_usage_time);
     int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
+    /*Send print constraints to Sauna*/
+    write(fd_order_fifo, &maxIdDigits,sizeof(maxIdDigits));
+    write(fd_order_fifo, &maxUsageDigits,sizeof(maxUsageDigits));
+
     for (size_t i = 0; i < max_number_orders; i++) {
 
         /* Generate random orders */
