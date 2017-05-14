@@ -13,9 +13,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0f4efaa3-fb3b-4737-957d-f10de56e7bba" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gerador" afterPath="$PROJECT_DIR$/gerador" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gerador.c" afterPath="$PROJECT_DIR$/gerador.c" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/sauna.c" afterPath="$PROJECT_DIR$/sauna.c" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/type.h" afterPath="$PROJECT_DIR$/type.h" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -36,8 +36,8 @@
           <file leaf-file-name="gerador.c" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/gerador.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="614">
-                  <caret line="118" column="40" lean-forward="true" selection-start-line="118" selection-start-column="40" selection-end-line="118" selection-end-column="40" />
+                <state relative-caret-position="505">
+                  <caret line="103" column="36" lean-forward="true" selection-start-line="103" selection-start-column="36" selection-end-line="103" selection-end-column="36" />
                   <folding />
                 </state>
               </provider>
@@ -70,7 +70,7 @@
           <file leaf-file-name="sauna.c" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/sauna.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-467">
+                <state relative-caret-position="-809">
                   <caret line="164" column="39" lean-forward="true" selection-start-line="154" selection-start-column="4" selection-end-line="164" selection-end-column="39" />
                   <folding />
                 </state>
@@ -86,6 +86,7 @@
       <find>time</find>
       <find>receiveRejectedFifo</find>
       <find>order</find>
+      <find>fd_order_fifo</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -299,12 +300,12 @@
       <workItem from="1493815522471" duration="14526000" />
       <workItem from="1494436899954" duration="1872000" />
       <workItem from="1494704970517" duration="1433000" />
-      <workItem from="1494778846741" duration="14831000" />
+      <workItem from="1494778846741" duration="16347000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="39372000" />
+    <option name="totallyTimeSpent" value="40888000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1920" height="1044" extended-state="6" />
@@ -460,7 +461,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/sauna.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-467">
+        <state relative-caret-position="-809">
           <caret line="164" column="39" lean-forward="true" selection-start-line="154" selection-start-column="4" selection-end-line="164" selection-end-column="39" />
           <folding />
         </state>
@@ -468,8 +469,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/gerador.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="614">
-          <caret line="118" column="40" lean-forward="true" selection-start-line="118" selection-start-column="40" selection-end-line="118" selection-end-column="40" />
+        <state relative-caret-position="505">
+          <caret line="103" column="36" lean-forward="true" selection-start-line="103" selection-start-column="36" selection-end-line="103" selection-end-column="36" />
           <folding />
         </state>
       </provider>

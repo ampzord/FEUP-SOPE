@@ -22,6 +22,7 @@ unsigned int max_number_orders;
 unsigned int max_usage_time;
 FILE* fp_register;
 double start_time;
+int fd_order_fifo;
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
@@ -34,7 +35,7 @@ void* threadOrders()
 {   
     int maxIdDigits = findn(max_number_orders);
     int maxUsageDigits = findn(max_usage_time);
-    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
+    fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
     /* Send print constraints to Sauna*/
     write(fd_order_fifo, &maxIdDigits,sizeof(maxIdDigits));
@@ -96,10 +97,24 @@ void processRejectedOrder(Order* ord) {
     fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
     fprintf(fp_register, "REJEITADOS\n");
 
+    if (ord->rejected < 3) {
+        //TODO not sure if this is correct!!!
+        write(fd_order_fifo, ord, sizeof(Order));
+    }
+        /* ORDERS TO BE DISCARDED */
+    else {
+        /* Get time between requests */
+        gettimeofday(&tv, NULL);
+        double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
+        double delta_time = (end_time - start_time) / 1000;
 
-    //TODO: IF REJECTED < 3 -> SEND TO GENERATE THREAD
-    //TODO: ELSE -> DISCARD
-
+        fprintf(fp_register, "%.2f - ", delta_time);
+        fprintf(fp_register, "%ld - ", gettid());
+        fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
+        fprintf(fp_register, "%c ", ord->gender);
+        fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
+        fprintf(fp_register, "DESCARTADO\n");
+    }
 }
 
 
@@ -169,12 +184,14 @@ int main(int argc, char *argv[]) {
     pthread_t rej_pth = receiveRejected();
 
     pthread_join(gen_pth, NULL);
+    pthread_join(rej_pth, NULL);
 
     /* unlink fifos */
     unlink(orderFIFO);
 
     /* Close register file */
     fclose(fp_register);
+    close(fd_order_fifo);
 
     return 0;
 }
