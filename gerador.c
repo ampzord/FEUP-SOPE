@@ -78,6 +78,7 @@ void* threadOrders()
         sleep(1);
     }
     close(fd_order_fifo);
+    return NULL;
 }
 
 pthread_t generateOrders() {

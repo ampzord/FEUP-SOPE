@@ -23,9 +23,6 @@ typedef struct {
     unsigned int time_ms;
 } ThreadArg;
 
-enum TYPE {RECEBIDO, REJEITADO, SERVIDO};
-
-
 extern int errno;
 unsigned int number_seats;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to update seat values
@@ -108,6 +105,7 @@ void* runOrder(void *arg) {
     /* Thread ended */
     removeSeatThread(idx);
     free(arg);
+    return NULL;
 }
 
 pthread_t acceptOrder(Order *ord, int idx) {
@@ -234,7 +232,7 @@ int main(int argc, char *argv[]) {
     
     Order* ord = malloc(sizeof(Order));
 
-    /*Read Print constraints*/
+    /* Read print constraints */
     read(fd,&max_number_orders,sizeof(max_number_orders));
     read(fd,&max_usage_time,sizeof(max_usage_time));
 
@@ -242,11 +240,12 @@ int main(int argc, char *argv[]) {
         processOrder(ord);
     }
     
-    for (int i = 0; i < number_seats; i++)
+    for (int i = 0; i < number_seats; i++) {
         if (seats_threads[i].idx >= 0) {
-            printf("Waiting on thread: %d\n",i);
+            printf("Waiting on thread: %d\n", i);
             pthread_join(seats_threads[i].pth, NULL);
         }
+    }
     
     /* Cleanup */
     unlink(rejectedFIFO);
