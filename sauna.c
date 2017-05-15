@@ -262,6 +262,10 @@ int main(int argc, char *argv[]) {
 
     while(readOrder(fd, ord)) {
         processOrder(ord);
+        close(fd);
+        usleep(1000);
+        fd=open(ORDER_FIFO ,O_RDONLY);
+        if (fd == -1) break;        
     }
 
     for (int i = 0; i < number_seats; i++) {
