@@ -23,16 +23,15 @@ unsigned int max_usage_time;
 FILE* fp_register;
 double start_time;
 
-
 int fd_order_fifo;
 int rej_fifo_fd;
 
-int generated_orders_M;
-int generated_orders_F;
-int rejected_received_M;
-int rejected_received_F;
-int rejected_discarded_M;
-int rejected_discarded_F;
+int generated_orders_M = 0;
+int generated_orders_F = 0;
+int rejected_received_M = 0;
+int rejected_received_F = 0;
+int rejected_discarded_M = 0;
+int rejected_discarded_F = 0;
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
@@ -104,7 +103,7 @@ void processRejectedOrder(Order* ord) {
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
     fprintf(fp_register, "REJEITADO ");
-    fprintf(fp_register, "%d\n",ord->rejected);
+    //fprintf(fp_register, "%d\n",ord->rejected);
 
     if (ord->gender == 'M') {
         rejected_received_M++;
@@ -183,13 +182,6 @@ int main(int argc, char *argv[]) {
         printUsageMessage();
         exit(1);
     }
-
-    generated_orders_M = 0;
-    generated_orders_F = 0;
-    rejected_received_M = 0;
-    rejected_received_F = 0;
-    rejected_discarded_M = 0;
-    rejected_discarded_F = 0;
 
     /* Defines a differend random seed */
     int seed = time(NULL);

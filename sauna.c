@@ -26,12 +26,12 @@ FILE* fp_register;
 unsigned int max_number_orders;
 unsigned int max_usage_time;
 
-int received_orders_M;
-int received_orders_F;
-int rejected_orders_M;
-int rejected_orders_F;
-int served_orders_M;
-int served_orders_F;
+int received_orders_M = 0;
+int received_orders_F = 0;
+int rejected_orders_M = 0;
+int rejected_orders_F = 0;
+int served_orders_M = 0;
+int served_orders_F = 0;
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
@@ -218,13 +218,6 @@ int main(int argc, char *argv[]) {
         printUsageMessage();
         exit(1);
     }
-
-    received_orders_M = 0;
-    received_orders_F = 0;
-    rejected_orders_M = 0;
-    rejected_orders_F = 0;
-    served_orders_M = 0;
-    served_orders_F = 0;
 
     /* Parse command-line arguments to global variables */
     number_seats = atoi(argv[1]);
