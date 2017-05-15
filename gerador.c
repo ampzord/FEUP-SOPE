@@ -103,7 +103,8 @@ void processRejectedOrder(Order* ord) {
     fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
-    fprintf(fp_register, "REJEITADO\n");
+    fprintf(fp_register, "REJEITADO ");
+    fprintf(fp_register, "%d\n",ord->rejected);
 
     if (ord->gender == 'M') {
         rejected_received_M++;
