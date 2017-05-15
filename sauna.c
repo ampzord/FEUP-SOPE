@@ -139,8 +139,6 @@ void rejectOrder(Order *ord) {
 
     ord->rejected++;
     printf("Rejected because current gender is %c and requested %c\n", curr_gender, ord->gender);
-    // TODO: Send rejected order back
-    // TODO: do I need to check if its the 3rd time ? I believe its in rejectedThread() you check
 
     /* Write struct to rejected fifo */
     write(fd_rejected_fifo, ord, sizeof(Order));

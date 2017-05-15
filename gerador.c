@@ -55,10 +55,11 @@ void* threadOrders()
         ord->serial_number = ++total_orders;
         
         /* Write messages to the Order FIFO */
+
         write(fd_order_fifo, ord, sizeof(Order));
 
+
         /* Write messages to register */
-        //pthread_t id = pthread_self();
 
         gettimeofday(&tv, NULL);
         double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
@@ -95,10 +96,9 @@ void processRejectedOrder(Order* ord) {
     fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
-    fprintf(fp_register, "REJEITADOS\n");
+    fprintf(fp_register, "REJEITADO\n");
 
     if (ord->rejected < 3) {
-        //TODO not sure if this is correct!!!
         write(fd_order_fifo, ord, sizeof(Order));
     }
         /* ORDERS TO BE DISCARDED */
@@ -115,6 +115,7 @@ void processRejectedOrder(Order* ord) {
         fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
         fprintf(fp_register, "DESCARTADO\n");
     }
+
 }
 
 
@@ -126,7 +127,7 @@ void* rejectedThread()
     do
     {
         printf("Opening Rejected FIFO...\n");
-        rej_fifo_fd=open(ORDER_FIFO ,O_RDONLY);
+        rej_fifo_fd=open(REJECTED_FIFO ,O_RDONLY);
         if (rej_fifo_fd == -1) sleep(1);
     } while (rej_fifo_fd == -1);
     printf("REJECTED FIFO found\n");
@@ -135,6 +136,7 @@ void* rejectedThread()
         processRejectedOrder(ord);
     }
 
+    free(ord);
     return NULL;
 }
 
@@ -157,6 +159,8 @@ int main(int argc, char *argv[]) {
         printUsageMessage();
         exit(1);
     }
+
+    pthread_mutex_unlock(&lock);
 
     /* Defines a differend random seed */
     int seed = time(NULL);
