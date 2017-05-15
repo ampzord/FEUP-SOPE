@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <errno.h> /* errno */
-#include <fcntl.h> /* O_RDONLY O_WRONLY */
+#include <fcntl.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
@@ -13,7 +12,6 @@
 #include "type.h"
 #include "consts.h"
 
-extern int errno;
 unsigned int number_seats;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to update seat values
 pthread_mutex_t mut_add = PTHREAD_MUTEX_INITIALIZER; // Mutex to assign seat
@@ -22,10 +20,8 @@ char curr_gender; // Char to hold the current type
 
 double start_time;
 FILE* fp_register;
-
 unsigned int max_number_orders;
 unsigned int max_usage_time;
-
 int received_orders_M = 0;
 int received_orders_F = 0;
 int rejected_orders_M = 0;
@@ -35,7 +31,7 @@ int served_orders_F = 0;
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
-    printf("Usage: sauna <number of seats>\n");
+    printf("Usage: ./sauna <number of seats>\n");
     printf("Number of seats : is the total number of orders generated throughout the execution of the program. If that number is reached the program stops.\n\n");
 }
 
@@ -214,6 +210,7 @@ void statsGeneratedSauna() {
 }
 
 int main(int argc, char *argv[]) {
+
     if (argc != 2) {
         printUsageMessage();
         exit(1);
@@ -237,11 +234,16 @@ int main(int argc, char *argv[]) {
     
     /* Create Rejected FIFO */
     char* rejectedFIFO = REJECTED_FIFO;
+<<<<<<< HEAD
     if(mkfifo(rejectedFIFO, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
         perror("Error creating GENERATE fifo");
         exit(-1);
     }
     //mkfifo(rejectedFIFO, 0660);
+=======
+    mkfifo(rejectedFIFO, 0660);
+
+>>>>>>> df912a98109ca6913a0a2be8865de540cf652d2f
     
     /* Frees mutex from possible previous lock */
     pthread_mutex_unlock(&mut);
@@ -281,5 +283,6 @@ int main(int argc, char *argv[]) {
     close(fd);
     fclose(fp_register);
 
+    pthread_exit(NULL);
     return 0;
 }

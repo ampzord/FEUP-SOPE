@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <errno.h> /* errno */
 #include <pthread.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -10,22 +9,18 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <stdint.h> /*uint */
-
 #include <sys/time.h>
 
 #include "type.h"
 #include "consts.h"
 
-extern int errno;
 unsigned int total_orders = 0;
 unsigned int max_number_orders;
 unsigned int max_usage_time;
 FILE* fp_register;
 double start_time;
-
 int fd_order_fifo;
 int rej_fifo_fd;
-
 int generated_orders_M = 0;
 int generated_orders_F = 0;
 int rejected_received_M = 0;
@@ -35,7 +30,7 @@ int rejected_discarded_F = 0;
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
-    printf("Usage: gerador <number of orders> <max usage time>\n");
+    printf("./\n");
     printf("Number of orders : is the total number of orders generated throughout the execution of the program. If that number is reached the program stops.\n");
     printf("Max usage time : is the maximum time a user can stay inside a sauna.\n\n");
 }
@@ -103,7 +98,6 @@ void processRejectedOrder(Order* ord) {
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
     fprintf(fp_register, "REJEITADO ");
-    //fprintf(fp_register, "%d\n",ord->rejected);
 
     if (ord->gender == 'M') {
         rejected_received_M++;
@@ -144,11 +138,8 @@ void* rejectedThread()
 
     while(readOrder(rej_fifo_fd, ord)) {
         processRejectedOrder(ord);
-        //usleep(500*1000);
-        //sleep(1);
     }
 
-    //sleep(1);
     usleep(500*1000);
     free(ord);
     return NULL;
@@ -165,7 +156,6 @@ pthread_t receiveRejected() {
     pthread_create(&pth,NULL,rejectedThread,NULL);
     return pth;
 }
-
 
 void statsGeneratedGerador() {
     printf("\n-------- FINAL STATS GENERATED FOR GERADOR -----------\n");
@@ -226,12 +216,12 @@ int main(int argc, char *argv[]) {
 
     statsGeneratedGerador();
 
-    /* unlink fifos */
+    /* Cleanup */
     unlink(orderFIFO);
     fclose(fp_register);
     close(rej_fifo_fd);
     close(fd_order_fifo);
-    pthread_exit(NULL);
 
+    pthread_exit(NULL);
     return 0;
 }
