@@ -9,7 +9,8 @@ typedef struct {
 int readOrder(int fd, Order *ord) {
     int n;
     n = read(fd,ord,sizeof(Order));
-    return n;
+    printf("READORDER : %d\n",n);
+    return n > 0;
 }
 
 struct timeval tv;

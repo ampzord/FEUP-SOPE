@@ -18,6 +18,7 @@
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gerador.c" afterPath="$PROJECT_DIR$/gerador.c" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/sauna.c" afterPath="$PROJECT_DIR$/sauna.c" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/type.h" afterPath="$PROJECT_DIR$/type.h" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -38,8 +39,8 @@
           <file leaf-file-name="gerador.c" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/gerador.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="378">
-                  <caret line="105" column="45" lean-forward="true" selection-start-line="105" selection-start-column="45" selection-end-line="105" selection-end-column="45" />
+                <state relative-caret-position="387">
+                  <caret line="178" column="43" lean-forward="false" selection-start-line="178" selection-start-column="29" selection-end-line="178" selection-end-column="43" />
                   <folding />
                 </state>
               </provider>
@@ -49,7 +50,7 @@
             <entry file="file://$PROJECT_DIR$/type.h">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="216">
-                  <caret line="12" column="1" lean-forward="false" selection-start-line="12" selection-start-column="1" selection-end-line="12" selection-end-column="1" />
+                  <caret line="12" column="17" lean-forward="true" selection-start-line="12" selection-start-column="17" selection-end-line="12" selection-end-column="17" />
                   <folding />
                 </state>
               </provider>
@@ -72,8 +73,8 @@
           <file leaf-file-name="sauna.c" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/sauna.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="280">
-                  <caret line="168" column="0" lean-forward="true" selection-start-line="168" selection-start-column="0" selection-end-line="168" selection-end-column="0" />
+                <state relative-caret-position="285">
+                  <caret line="281" column="17" lean-forward="false" selection-start-line="281" selection-start-column="0" selection-end-line="282" selection-end-column="0" />
                   <folding />
                 </state>
               </provider>
@@ -93,6 +94,7 @@
       <find>REJEITADO</find>
       <find>fd_rejected_fifo</find>
       <find>rej</find>
+      <find>rejectedFIFO</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -310,12 +312,12 @@
       <workItem from="1494806984352" duration="2173000" />
       <workItem from="1494809207544" duration="161000" />
       <workItem from="1494809415366" duration="5493000" />
-      <workItem from="1494859780042" duration="2270000" />
+      <workItem from="1494859780042" duration="5513000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="74709000" />
+    <option name="totallyTimeSpent" value="77952000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1920" height="1044" extended-state="6" />
@@ -721,23 +723,23 @@
     <entry file="file://$PROJECT_DIR$/type.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="216">
-          <caret line="12" column="1" lean-forward="false" selection-start-line="12" selection-start-column="1" selection-end-line="12" selection-end-column="1" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sauna.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="280">
-          <caret line="168" column="0" lean-forward="true" selection-start-line="168" selection-start-column="0" selection-end-line="168" selection-end-column="0" />
+          <caret line="12" column="17" lean-forward="true" selection-start-line="12" selection-start-column="17" selection-end-line="12" selection-end-column="17" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/gerador.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="378">
-          <caret line="105" column="45" lean-forward="true" selection-start-line="105" selection-start-column="45" selection-end-line="105" selection-end-column="45" />
+        <state relative-caret-position="387">
+          <caret line="178" column="43" lean-forward="false" selection-start-line="178" selection-start-column="29" selection-end-line="178" selection-end-column="43" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sauna.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="285">
+          <caret line="281" column="17" lean-forward="false" selection-start-line="281" selection-start-column="0" selection-end-line="282" selection-end-column="0" />
           <folding />
         </state>
       </provider>

@@ -19,7 +19,7 @@ unsigned int max_number_orders;
 unsigned int max_usage_time;
 FILE* fp_register;
 double start_time;
-int fd_order_fifo;
+//int fd_order_fifo;
 int rej_fifo_fd;
 int generated_orders_M = 0;
 int generated_orders_F = 0;
@@ -29,6 +29,7 @@ int rejected_discarded_M = 0;
 int rejected_discarded_F = 0;
 extern int errno;
 int sending_rejected = 0;
+pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to update seat values
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
@@ -37,15 +38,21 @@ void printUsageMessage() {
     printf("Max usage time : is the maximum time a user can stay inside a sauna.\n\n");
 }
 
+void writeSynced(int fd, void *buf, size_t size) {
+    pthread_mutex_lock(&mut);
+    write(fd, buf, size);
+    pthread_mutex_unlock(&mut);
+}
+
 void* threadOrders()
 {   
     int maxIdDigits = findn(max_number_orders);
     int maxUsageDigits = findn(max_usage_time);
-    fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
+    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
     /* Send print constraints to Sauna */
-    write(fd_order_fifo, &maxIdDigits,sizeof(maxIdDigits));
-    write(fd_order_fifo, &maxUsageDigits,sizeof(maxUsageDigits));
+    writeSynced(fd_order_fifo, &maxIdDigits,sizeof(maxIdDigits));
+    writeSynced(fd_order_fifo, &maxUsageDigits,sizeof(maxUsageDigits));
 
     for (size_t i = 0; i < max_number_orders; i++) {
 
@@ -67,7 +74,7 @@ void* threadOrders()
         ord->serial_number = ++total_orders;
         
         /* Write messages to the Order FIFO */
-        write(fd_order_fifo, ord, sizeof(Order));
+        writeSynced(fd_order_fifo, ord, sizeof(Order));
 
         /* Write messages to register */
 
@@ -85,12 +92,15 @@ void* threadOrders()
         free(ord);
         ord = NULL;
     }
+
+    close(fd_order_fifo);
     //sleep(250*1000);
     return NULL;
 }
 
 
 void processRejectedOrder(Order* ord) {
+    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
     sending_rejected = 1;
 
@@ -115,7 +125,7 @@ void processRejectedOrder(Order* ord) {
     }
 
     if (ord->rejected < 3) {
-        write(fd_order_fifo, ord, sizeof(Order));
+        writeSynced(fd_order_fifo, ord, sizeof(Order));
     }
         /* ORDERS TO BE DISCARDED */
     else {
@@ -139,6 +149,7 @@ void processRejectedOrder(Order* ord) {
         }
     }
     sleep(1);
+    close(fd_order_fifo);
 
     sending_rejected = 0;
 }
@@ -231,7 +242,7 @@ int main(int argc, char *argv[]) {
     unlink(orderFIFO);
     fclose(fp_register);
     close(rej_fifo_fd);
-    close(fd_order_fifo);
+    //close(fd_order_fifo);
 
     pthread_exit(NULL);
     return 0;

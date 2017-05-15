@@ -14,7 +14,6 @@
 
 unsigned int number_seats;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to update seat values
-pthread_mutex_t mut_add = PTHREAD_MUTEX_INITIALIZER; // Mutex to assign seat
 SeatThread *seats_threads = NULL; // Array to hold all the seat threads
 char curr_gender; // Char to hold the current type
 
@@ -260,12 +259,14 @@ int main(int argc, char *argv[]) {
     read(fd,&max_number_orders,sizeof(max_number_orders));
     read(fd,&max_usage_time,sizeof(max_usage_time));
 
-    while(readOrder(fd, ord)) {
+    struct stat st;
+    fstat(fd, &st);
+    while(/*S_ISFIFO(st.st_mode) &&*/ readOrder(fd, ord)) {
         processOrder(ord);
-        close(fd);
-        usleep(1000);
-        fd=open(ORDER_FIFO ,O_RDONLY);
-        if (fd == -1) break;        
+        //usleep(1000);
+        /*fstat(fd, &st);
+        if (!S_ISFIFO(st.st_mode))
+            break;*/
     }
 
     for (int i = 0; i < number_seats; i++) {
