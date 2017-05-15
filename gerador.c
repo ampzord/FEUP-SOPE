@@ -197,7 +197,11 @@ int main(int argc, char *argv[]) {
 
     /* Create Order FIFO */
     char* orderFIFO = ORDER_FIFO;
-    mkfifo(orderFIFO, 0660);
+    if(mkfifo(orderFIFO, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
+        perror("Error creating GENERATE fifo");
+        exit(-1);
+    }
+    //mkfifo(orderFIFO, 0660);
     
     /* Create register file */
     char path_reg[16];

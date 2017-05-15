@@ -237,7 +237,11 @@ int main(int argc, char *argv[]) {
     
     /* Create Rejected FIFO */
     char* rejectedFIFO = REJECTED_FIFO;
-    mkfifo(rejectedFIFO, 0660);
+    if(mkfifo(rejectedFIFO, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
+        perror("Error creating GENERATE fifo");
+        exit(-1);
+    }
+    //mkfifo(rejectedFIFO, 0660);
     
     /* Frees mutex from possible previous lock */
     pthread_mutex_unlock(&mut);
