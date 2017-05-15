@@ -31,3 +31,9 @@ typedef struct {
     int idx;
     unsigned int time_ms;
 } ThreadArg;
+
+double getCurrentTime() {
+    gettimeofday(&tv, NULL);
+    double curr_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
+    return curr_time;
+}

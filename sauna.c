@@ -26,6 +26,13 @@ FILE* fp_register;
 unsigned int max_number_orders;
 unsigned int max_usage_time;
 
+int received_orders_M;
+int received_orders_F;
+int rejected_orders_M;
+int rejected_orders_F;
+int served_orders_M;
+int served_orders_F;
+
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
     printf("Usage: sauna <number of seats>\n");
@@ -96,10 +103,8 @@ pthread_t acceptOrder(Order *ord, int idx) {
 
     /* Write messages to register */
 
-    /* Get time between requests */
-    gettimeofday(&tv, NULL);
-    double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
-    double delta_time = (end_time - start_time) / 1000;
+    /* Get Elapsed time */
+    double delta_time = (getCurrentTime() - start_time) / 1000;
 
     fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
@@ -107,6 +112,14 @@ pthread_t acceptOrder(Order *ord, int idx) {
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
     fprintf(fp_register, "SERVIDO\n");
+
+
+    if (ord->gender == 'M') {
+        served_orders_M++;
+    }
+    else if (ord->gender == 'F') {
+        served_orders_F++;
+    }
 
     pthread_t pth;
     unsigned int *time_ms = malloc(sizeof(time_ms));
@@ -125,10 +138,8 @@ void rejectOrder(Order *ord) {
 
     /* Write messages to register */
 
-    /* Get time between requests */
-    gettimeofday(&tv, NULL);
-    double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
-    double delta_time = (end_time - start_time) / 1000;
+    /* Get Elapsed time */
+    double delta_time = (getCurrentTime() - start_time) / 1000;
 
     fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
@@ -136,6 +147,13 @@ void rejectOrder(Order *ord) {
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
     fprintf(fp_register, "REJEITADO\n");
+
+    if (ord->gender == 'M') {
+        rejected_orders_M++;
+    }
+    else if (ord->gender == 'F') {
+        rejected_orders_F++;
+    }
 
     ord->rejected++;
     printf("Rejected because current gender is %c and requested %c\n", curr_gender, ord->gender);
@@ -150,10 +168,8 @@ void processOrder(Order *ord) {
 
     /* Write messages to register */
 
-    /* Get time between requests */
-    gettimeofday(&tv, NULL);
-    double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
-    double delta_time = (end_time - start_time) / 1000;
+    /* Get Elapsed time */
+    double delta_time = (getCurrentTime() - start_time) / 1000;
 
     fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
@@ -164,6 +180,13 @@ void processOrder(Order *ord) {
 
     /* Wait for empty seats */
     while (getEmptySeats() == 0) usleep(500*1000);
+
+    if (ord->gender == 'M') {
+        received_orders_M++;
+    }
+    else if (ord->gender == 'F') {
+        received_orders_F++;
+    }
 
     if (isEmpty()) {
         curr_gender = ord->gender;
@@ -182,11 +205,26 @@ void processOrder(Order *ord) {
     setSeatThread(idx, st);
 }
 
+void statsGeneratedSauna() {
+    printf("\n-------- FINAL STATS GENERATED FOR SAUNA ------------\n");
+    printf("TOTAL ORDERS RECEIVED : %d, MALE : %d, FEMALE : %d\n", received_orders_F+received_orders_M,received_orders_M,received_orders_F);
+    printf("TOTAL ORDERS REJECTED : %d, MALE : %d, FEMALE : %d\n", rejected_orders_F+rejected_orders_M,rejected_orders_M,rejected_orders_F);
+    printf("TOTAL ORDERS SERVED   : %d, MALE : %d, FEMALE : %d\n", served_orders_F+served_orders_M,served_orders_M,served_orders_F);
+    printf("-----------------------------------------------------\n");
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         printUsageMessage();
         exit(1);
     }
+
+    received_orders_M = 0;
+    received_orders_F = 0;
+    rejected_orders_M = 0;
+    rejected_orders_F = 0;
+    served_orders_M = 0;
+    served_orders_F = 0;
 
     /* Parse command-line arguments to global variables */
     number_seats = atoi(argv[1]);
@@ -216,8 +254,8 @@ int main(int argc, char *argv[]) {
     {
         printf("Opening FIFO...\n");
         fd=open(ORDER_FIFO ,O_RDONLY);
-        if (fd==-1) sleep(1);
-    } while (fd==-1);
+        if (fd == -1) sleep(1);
+    } while (fd == -1);
     printf("FIFO found\n");
     
     Order* ord = malloc(sizeof(Order));
@@ -229,20 +267,21 @@ int main(int argc, char *argv[]) {
     while(readOrder(fd, ord)) {
         processOrder(ord);
     }
-    
+
     for (int i = 0; i < number_seats; i++) {
         if (seats_threads[i].idx >= 0) {
             printf("Waiting on thread: %d\n", i);
             pthread_join(seats_threads[i].pth, NULL);
         }
     }
+
+    statsGeneratedSauna();
     
     /* Cleanup */
     unlink(rejectedFIFO);
     free(seats_threads);
     free(ord);
-
-    /* Close register file */
+    close(fd);
     fclose(fp_register);
 
     return 0;

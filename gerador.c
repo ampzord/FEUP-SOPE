@@ -24,6 +24,15 @@ FILE* fp_register;
 double start_time;
 int fd_order_fifo;
 
+int rej_fifo_fd;
+
+int generated_orders_M;
+int generated_orders_F;
+int rejected_received_M;
+int rejected_received_F;
+int rejected_discarded_M;
+int rejected_discarded_F;
+
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
     printf("Usage: gerador <number of orders> <max usage time>\n");
@@ -35,9 +44,9 @@ void* threadOrders()
 {   
     int maxIdDigits = findn(max_number_orders);
     int maxUsageDigits = findn(max_usage_time);
-    fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
+    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
-    /* Send print constraints to Sauna*/
+    /* Send print constraints to Sauna */
     write(fd_order_fifo, &maxIdDigits,sizeof(maxIdDigits));
     write(fd_order_fifo, &maxUsageDigits,sizeof(maxUsageDigits));
 
@@ -48,25 +57,24 @@ void* threadOrders()
 
         if (rand() % 2 == 0) {
             ord->gender = 'M';
+            generated_orders_M++;
         } else {
             ord->gender = 'F';
+            generated_orders_F++;
         }
+
         ord->time_spent = rand() % max_usage_time + 1;
         ord->serial_number = ++total_orders;
         
         /* Write messages to the Order FIFO */
-
         write(fd_order_fifo, ord, sizeof(Order));
-
 
         /* Write messages to register */
 
-        gettimeofday(&tv, NULL);
-        double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
-        double delta_time = (end_time - start_time) / 1000;
+        /* Get Elapsed time */
+        double delta_time = (getCurrentTime() - start_time) / 1000;
 
         fprintf(fp_register, "%.2f - ", delta_time);
-        //changed from %d to %ld to remove warning print to long int
         fprintf(fp_register, "%ld - ", gettid());
         fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
         fprintf(fp_register, "%c ", ord->gender);
@@ -76,8 +84,9 @@ void* threadOrders()
         /* Cleanup order */
         free(ord);
         ord = NULL;
-        
-		usleep(500*1000);
+
+        usleep(500*1000);
+		//sleep(1);
     }
     close(fd_order_fifo);
     return NULL;
@@ -86,10 +95,10 @@ void* threadOrders()
 
 void processRejectedOrder(Order* ord) {
 
-    /* Get time between requests */
-    gettimeofday(&tv, NULL);
-    double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
-    double delta_time = (end_time - start_time) / 1000;
+    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
+
+    /* Get Elapsed time */
+    double delta_time = (getCurrentTime() - start_time) / 1000;
 
     int maxIdDigits = findn(max_number_orders);
     int maxUsageDigits = findn(max_usage_time);
@@ -101,15 +110,20 @@ void processRejectedOrder(Order* ord) {
     fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
     fprintf(fp_register, "REJEITADO\n");
 
+    if (ord->gender == 'M') {
+        rejected_received_M++;
+    }
+    else if (ord->gender == 'F') {
+        rejected_received_F++;
+    }
+
     if (ord->rejected < 3) {
         write(fd_order_fifo, ord, sizeof(Order));
     }
         /* ORDERS TO BE DISCARDED */
     else {
-        /* Get time between requests */
-        gettimeofday(&tv, NULL);
-        double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
-        double delta_time = (end_time - start_time) / 1000;
+        /* Get Elapsed time */
+        double delta_time = (getCurrentTime() - start_time) / 1000;
 
         fprintf(fp_register, "%.2f - ", delta_time);
         fprintf(fp_register, "%ld - ", gettid());
@@ -117,8 +131,17 @@ void processRejectedOrder(Order* ord) {
         fprintf(fp_register, "%c ", ord->gender);
         fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
         fprintf(fp_register, "DESCARTADO\n");
+
+        if (ord->gender == 'M') {
+            rejected_discarded_M++;
+        }
+        else if (ord->gender == 'F') {
+            rejected_discarded_F++;
+        }
     }
 
+    close(fd_order_fifo);
+    //sleep(1);
 }
 
 
@@ -126,19 +149,14 @@ void* rejectedThread()
 {
     Order* ord = malloc(sizeof(Order));
 
-    int rej_fifo_fd;
-    do
-    {
-        printf("Opening Rejected FIFO...\n");
-        rej_fifo_fd=open(REJECTED_FIFO ,O_RDONLY);
-        if (rej_fifo_fd == -1) sleep(1);
-    } while (rej_fifo_fd == -1);
-    printf("REJECTED FIFO found\n");
-
     while(readOrder(rej_fifo_fd, ord)) {
         processRejectedOrder(ord);
+        usleep(500*1000);
+        //sleep(1);
     }
 
+    //sleep(1);
+    usleep(500*1000);
     free(ord);
     return NULL;
 }
@@ -155,6 +173,15 @@ pthread_t receiveRejected() {
     return pth;
 }
 
+
+void statsGeneratedGerador() {
+    printf("\n-------- FINAL STATS GENERATED FOR GERADOR -----------\n");
+    printf("TOTAL ORDERS GENERATED : %d, MALE : %d, FEMALE : %d\n", generated_orders_F+generated_orders_M, generated_orders_M, generated_orders_F);
+    printf("TOTAL ORDERS REJECTED  : %d, MALE : %d, FEMALE : %d\n", rejected_received_F+rejected_received_M, rejected_received_M, rejected_received_F);
+    printf("TOTAL ORDERS DISCARDED : %d, MALE : %d, FEMALE : %d\n", rejected_discarded_F+rejected_discarded_M, rejected_discarded_M, rejected_discarded_F);
+    printf("------------------------------------------------------\n");
+}
+
 int main(int argc, char *argv[]) {
 
     /* Validates arguments */
@@ -162,6 +189,13 @@ int main(int argc, char *argv[]) {
         printUsageMessage();
         exit(1);
     }
+
+    generated_orders_M = 0;
+    generated_orders_F = 0;
+    rejected_received_M = 0;
+    rejected_received_F = 0;
+    rejected_discarded_M = 0;
+    rejected_discarded_F = 0;
 
     /* Defines a differend random seed */
     int seed = time(NULL);
@@ -186,17 +220,28 @@ int main(int argc, char *argv[]) {
 
     /* Generate orders */
     pthread_t gen_pth = generateOrders();
+
+    do
+    {
+        printf("Opening Rejected FIFO...\n");
+        rej_fifo_fd=open(REJECTED_FIFO ,O_RDONLY);
+        if (rej_fifo_fd == -1) sleep(1);
+    } while (rej_fifo_fd == -1);
+    printf("REJECTED FIFO OPENED\n");
+
     pthread_t rej_pth = receiveRejected();
 
     pthread_join(gen_pth, NULL);
     pthread_join(rej_pth, NULL);
 
+    statsGeneratedGerador();
+
     /* unlink fifos */
     unlink(orderFIFO);
-
-    /* Close register file */
     fclose(fp_register);
-    close(fd_order_fifo);
+    close(rej_fifo_fd);
+
+    pthread_exit(NULL);
 
     return 0;
 }
