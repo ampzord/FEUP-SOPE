@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/gerador.c" line="12" mnemonic="3" />
+    <bookmark url="file://$PROJECT_DIR$/gerador.c" line="10" mnemonic="3" />
   </component>
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" buildAllGenerated="false">
     <generated />
@@ -13,7 +13,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0f4efaa3-fb3b-4737-957d-f10de56e7bba" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gerador" afterPath="$PROJECT_DIR$/gerador" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/sauna" afterPath="$PROJECT_DIR$/sauna" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gerador.c" afterPath="$PROJECT_DIR$/gerador.c" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/sauna.c" afterPath="$PROJECT_DIR$/sauna.c" />
     </list>
@@ -36,8 +37,8 @@
           <file leaf-file-name="gerador.c" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/gerador.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="617">
-                  <caret line="225" column="22" lean-forward="true" selection-start-line="225" selection-start-column="22" selection-end-line="225" selection-end-column="22" />
+                <state relative-caret-position="703">
+                  <caret line="220" column="4" lean-forward="true" selection-start-line="220" selection-start-column="4" selection-end-line="220" selection-end-column="23" />
                   <folding />
                 </state>
               </provider>
@@ -70,8 +71,8 @@
           <file leaf-file-name="sauna.c" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/sauna.c">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="-1602">
-                  <caret line="15" column="17" lean-forward="true" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
+                <state relative-caret-position="347">
+                  <caret line="245" column="36" lean-forward="true" selection-start-line="245" selection-start-column="36" selection-end-line="245" selection-end-column="36" />
                   <folding />
                 </state>
               </provider>
@@ -103,8 +104,8 @@
         <option value="$PROJECT_DIR$/makefile" />
         <option value="$PROJECT_DIR$/consts.h" />
         <option value="$PROJECT_DIR$/type.h" />
-        <option value="$PROJECT_DIR$/sauna.c" />
         <option value="$PROJECT_DIR$/gerador.c" />
+        <option value="$PROJECT_DIR$/sauna.c" />
       </list>
     </option>
   </component>
@@ -312,7 +313,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="69386000" />
+    <option name="totallyTimeSpent" value="71839000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1920" height="1044" extended-state="6" />
@@ -725,16 +726,16 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/gerador.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="617">
-          <caret line="225" column="22" lean-forward="true" selection-start-line="225" selection-start-column="22" selection-end-line="225" selection-end-column="22" />
+        <state relative-caret-position="703">
+          <caret line="220" column="4" lean-forward="true" selection-start-line="220" selection-start-column="4" selection-end-line="220" selection-end-column="23" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/sauna.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1602">
-          <caret line="15" column="17" lean-forward="true" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
+        <state relative-caret-position="347">
+          <caret line="245" column="36" lean-forward="true" selection-start-line="245" selection-start-column="36" selection-end-line="245" selection-end-column="36" />
           <folding />
         </state>
       </provider>
