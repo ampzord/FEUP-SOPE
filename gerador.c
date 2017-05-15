@@ -77,7 +77,7 @@ void* threadOrders()
         free(ord);
         ord = NULL;
         
-        sleep(1);
+		usleep(500*1000);
     }
     close(fd_order_fifo);
     return NULL;
@@ -91,11 +91,14 @@ void processRejectedOrder(Order* ord) {
     double end_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
     double delta_time = (end_time - start_time) / 1000;
 
+    int maxIdDigits = findn(max_number_orders);
+    int maxUsageDigits = findn(max_usage_time);
+
     fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
-    fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
+    fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
-    fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
+    fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
     fprintf(fp_register, "REJEITADO\n");
 
     if (ord->rejected < 3) {
@@ -110,9 +113,9 @@ void processRejectedOrder(Order* ord) {
 
         fprintf(fp_register, "%.2f - ", delta_time);
         fprintf(fp_register, "%ld - ", gettid());
-        fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
+        fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
         fprintf(fp_register, "%c ", ord->gender);
-        fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
+        fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
         fprintf(fp_register, "DESCARTADO\n");
     }
 
@@ -159,8 +162,6 @@ int main(int argc, char *argv[]) {
         printUsageMessage();
         exit(1);
     }
-
-    pthread_mutex_unlock(&lock);
 
     /* Defines a differend random seed */
     int seed = time(NULL);
