@@ -22,8 +22,9 @@ unsigned int max_number_orders;
 unsigned int max_usage_time;
 FILE* fp_register;
 double start_time;
-int fd_order_fifo;
 
+
+int fd_order_fifo;
 int rej_fifo_fd;
 
 int generated_orders_M;
@@ -44,7 +45,7 @@ void* threadOrders()
 {   
     int maxIdDigits = findn(max_number_orders);
     int maxUsageDigits = findn(max_usage_time);
-    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
+    fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
     /* Send print constraints to Sauna */
     write(fd_order_fifo, &maxIdDigits,sizeof(maxIdDigits));
@@ -84,18 +85,12 @@ void* threadOrders()
         /* Cleanup order */
         free(ord);
         ord = NULL;
-
-        usleep(500*1000);
-		//sleep(1);
     }
-    close(fd_order_fifo);
     return NULL;
 }
 
 
 void processRejectedOrder(Order* ord) {
-
-    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
@@ -139,9 +134,7 @@ void processRejectedOrder(Order* ord) {
             rejected_discarded_F++;
         }
     }
-
-    close(fd_order_fifo);
-    //sleep(1);
+    sleep(1);
 }
 
 
@@ -151,7 +144,7 @@ void* rejectedThread()
 
     while(readOrder(rej_fifo_fd, ord)) {
         processRejectedOrder(ord);
-        usleep(500*1000);
+        //usleep(500*1000);
         //sleep(1);
     }
 
@@ -240,7 +233,7 @@ int main(int argc, char *argv[]) {
     unlink(orderFIFO);
     fclose(fp_register);
     close(rej_fifo_fd);
-
+    close(fd_order_fifo);
     pthread_exit(NULL);
 
     return 0;
