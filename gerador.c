@@ -10,7 +10,7 @@
 #include <sys/file.h>
 #include <stdint.h> /*uint */
 #include <sys/time.h>
-
+#include <errno.h>
 #include "type.h"
 #include "consts.h"
 
@@ -27,6 +27,8 @@ int rejected_received_M = 0;
 int rejected_received_F = 0;
 int rejected_discarded_M = 0;
 int rejected_discarded_F = 0;
+extern int errno;
+int sending_rejected = 0;
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
@@ -46,6 +48,9 @@ void* threadOrders()
     write(fd_order_fifo, &maxUsageDigits,sizeof(maxUsageDigits));
 
     for (size_t i = 0; i < max_number_orders; i++) {
+
+
+        while(sending_rejected);
 
         /* Generate random orders */
         Order* ord = malloc(sizeof(Order));
@@ -80,11 +85,14 @@ void* threadOrders()
         free(ord);
         ord = NULL;
     }
+    //sleep(250*1000);
     return NULL;
 }
 
 
 void processRejectedOrder(Order* ord) {
+
+    sending_rejected = 1;
 
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
@@ -114,6 +122,8 @@ void processRejectedOrder(Order* ord) {
         /* Get Elapsed time */
         double delta_time = (getCurrentTime() - start_time) / 1000;
 
+        printf("DISCARDED!!!!\n");
+
         fprintf(fp_register, "%.2f - ", delta_time);
         fprintf(fp_register, "%ld - ", gettid());
         fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
@@ -129,6 +139,8 @@ void processRejectedOrder(Order* ord) {
         }
     }
     sleep(1);
+
+    sending_rejected = 0;
 }
 
 
@@ -140,7 +152,7 @@ void* rejectedThread()
         processRejectedOrder(ord);
     }
 
-    usleep(500*1000);
+    //usleep(500*1000);
     free(ord);
     return NULL;
 }
@@ -188,10 +200,9 @@ int main(int argc, char *argv[]) {
     /* Create Order FIFO */
     char* orderFIFO = ORDER_FIFO;
     if(mkfifo(orderFIFO, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
-        perror("Error creating GENERATE fifo");
+        perror("Couldn't Generate order FIFO");
         exit(-1);
     }
-    //mkfifo(orderFIFO, 0660);
     
     /* Create register file */
     char path_reg[16];
