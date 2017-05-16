@@ -1,40 +1,54 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <fcntl.h>
+#include <errno.h> /* errno */
+#include <fcntl.h> /* O_RDONLY O_WRONLY */
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <errno.h>
+
 #include "type.h"
 #include "consts.h"
 
+extern int errno;
 unsigned int number_seats;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to update seat values
+pthread_mutex_t mut_add = PTHREAD_MUTEX_INITIALIZER; // Mutex to assign seat
 SeatThread *seats_threads = NULL; // Array to hold all the seat threads
 char curr_gender; // Char to hold the current type
 
 double start_time;
 FILE* fp_register;
+
 unsigned int max_number_orders;
 unsigned int max_usage_time;
+int fd_rejected_fifo;
+int fd;
+Order* ord;
+
 int received_orders_M = 0;
 int received_orders_F = 0;
 int rejected_orders_M = 0;
 int rejected_orders_F = 0;
 int served_orders_M = 0;
 int served_orders_F = 0;
-extern int errno;
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
-    printf("Usage: ./sauna <number of seats>\n");
+    printf("Usage: sauna <number of seats>\n");
     printf("Number of seats : is the total number of orders generated throughout the execution of the program. If that number is reached the program stops.\n\n");
 }
 
+void statsGeneratedSauna() {
+    printf("\n-------- FINAL STATS GENERATED FOR SAUNA ------------\n");
+    printf("TOTAL ORDERS RECEIVED : %d, MALE : %d, FEMALE : %d\n", received_orders_F+received_orders_M,received_orders_M,received_orders_F);
+    printf("TOTAL ORDERS REJECTED : %d, MALE : %d, FEMALE : %d\n", rejected_orders_F+rejected_orders_M,rejected_orders_M,rejected_orders_F);
+    printf("TOTAL ORDERS SERVED   : %d, MALE : %d, FEMALE : %d\n", served_orders_F+served_orders_M,served_orders_M,served_orders_F);
+    printf("-----------------------------------------------------\n");
+}
 
 int getEmptySeat() {
     pthread_mutex_lock(&mut);
@@ -79,6 +93,28 @@ void removeSeatThread(int idx) {
     pthread_mutex_unlock(&mut);
 }
 
+void end() {
+    statsGeneratedSauna();
+    
+    /* Cleanup */
+    free(seats_threads);
+    free(ord);
+    close(fd);
+    close(fd_rejected_fifo);
+    fclose(fp_register);
+    exit (0);
+}
+
+void tryEnd() {
+    printf("Checking if is empty\n");
+    if(isEmpty()) {
+        sleep(1);
+        if (isEmpty()) {
+            end();            
+        }
+    }
+}
+
 void* runOrder(void *arg) {
     /* Parse arguments */
     ThreadArg targ = *((ThreadArg *) arg);
@@ -92,6 +128,8 @@ void* runOrder(void *arg) {
     /* Thread ended */
     removeSeatThread(idx);
     free(arg);
+    pthread_t pth;
+    pthread_create(&pth,NULL,tryEnd,NULL);
     return NULL;
 }
 
@@ -129,11 +167,8 @@ pthread_t acceptOrder(Order *ord, int idx) {
 }
 
 void rejectOrder(Order *ord) {
-
-    int fd_rejected_fifo = open(REJECTED_FIFO, O_WRONLY);
-
     /* Write messages to register */
-
+    
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
@@ -156,15 +191,12 @@ void rejectOrder(Order *ord) {
 
     /* Write struct to rejected fifo */
     write(fd_rejected_fifo, ord, sizeof(Order));
-
-    close(fd_rejected_fifo);
+    
 }
 
 void processOrder(Order *ord) {
 
     /* Write messages to register */
-
-    printf("%d\n",ord->rejected);
 
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
@@ -203,16 +235,7 @@ void processOrder(Order *ord) {
     setSeatThread(idx, st);
 }
 
-void statsGeneratedSauna() {
-    printf("\n-------- FINAL STATS GENERATED FOR SAUNA ------------\n");
-    printf("TOTAL ORDERS RECEIVED : %d, MALE : %d, FEMALE : %d\n", received_orders_F+received_orders_M,received_orders_M,received_orders_F);
-    printf("TOTAL ORDERS REJECTED : %d, MALE : %d, FEMALE : %d\n", rejected_orders_F+rejected_orders_M,rejected_orders_M,rejected_orders_F);
-    printf("TOTAL ORDERS SERVED   : %d, MALE : %d, FEMALE : %d\n", served_orders_F+served_orders_M,served_orders_M,served_orders_F);
-    printf("-----------------------------------------------------\n");
-}
-
 int main(int argc, char *argv[]) {
-
     if (argc != 2) {
         printUsageMessage();
         exit(1);
@@ -220,10 +243,6 @@ int main(int argc, char *argv[]) {
 
     /* Parse command-line arguments to global variables */
     number_seats = atoi(argv[1]);
-
-    /* Gets starting time of the program */
-    gettimeofday(&tv, NULL);
-    start_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
 
     /* Create register file */
     char path_reg[16];
@@ -234,39 +253,41 @@ int main(int argc, char *argv[]) {
     seats_threads = malloc(number_seats * sizeof(SeatThread));
     for (int i = 0; i < number_seats; i++) seats_threads[i].idx = -1;
     
-    /* Create Rejected FIFO */
-    char* rejectedFIFO = REJECTED_FIFO;
-    if(mkfifo(rejectedFIFO, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
-        perror("Couldn't generate rejected FIFO");
-        exit(-1);
-    }
-    
     /* Frees mutex from possible previous lock */
     pthread_mutex_unlock(&mut);
     
-    int fd;
     do
     {
-        printf("Opening FIFO...\n");
-        fd=open(ORDER_FIFO ,O_RDONLY);
+        printf("Opening Order FIFO...\n");
+        fd=open(ORDER_FIFO, O_RDONLY);
         if (fd == -1) sleep(1);
     } while (fd == -1);
-    printf("FIFO found\n");
+    printf("Order FIFO found\n");
     
-    Order* ord = malloc(sizeof(Order));
+    sleep(1);
+    
+    do
+    {
+        printf("Opening Rejected FIFO...\n");
+        fd_rejected_fifo=open(ORDER_FIFO, O_WRONLY);
+        if (fd_rejected_fifo == -1) sleep(1);
+    } while (fd_rejected_fifo == -1);
+    printf("Rejected FIFO found\n");
+    fd_rejected_fifo = open(REJECTED_FIFO, O_WRONLY);
+    
+    ord = malloc(sizeof(Order));
 
     /* Read print constraints */
     read(fd,&max_number_orders,sizeof(max_number_orders));
     read(fd,&max_usage_time,sizeof(max_usage_time));
 
-    struct stat st;
-    fstat(fd, &st);
-    while(/*S_ISFIFO(st.st_mode) &&*/ readOrder(fd, ord)) {
+    /* Gets starting time of the program */
+    printf("Starting counting time\n");
+    gettimeofday(&tv, NULL);
+    start_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
+    
+    while(readOrder(fd, ord)) {
         processOrder(ord);
-        //usleep(1000);
-        /*fstat(fd, &st);
-        if (!S_ISFIFO(st.st_mode))
-            break;*/
     }
 
     for (int i = 0; i < number_seats; i++) {
@@ -276,15 +297,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    statsGeneratedSauna();
-    
-    /* Cleanup */
-    unlink(rejectedFIFO);
-    free(seats_threads);
-    free(ord);
-    close(fd);
-    fclose(fp_register);
-
-    pthread_exit(NULL);
+    end();
     return 0;
 }

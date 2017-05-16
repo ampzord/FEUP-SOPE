@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h> /* errno */
 #include <pthread.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -9,56 +10,48 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <stdint.h> /*uint */
+
 #include <sys/time.h>
-#include <errno.h>
+
 #include "type.h"
 #include "consts.h"
 
+extern int errno;
 unsigned int total_orders = 0;
 unsigned int max_number_orders;
 unsigned int max_usage_time;
 FILE* fp_register;
 double start_time;
-//int fd_order_fifo;
+
+int fd_order_fifo;
 int rej_fifo_fd;
+
 int generated_orders_M = 0;
 int generated_orders_F = 0;
 int rejected_received_M = 0;
 int rejected_received_F = 0;
 int rejected_discarded_M = 0;
 int rejected_discarded_F = 0;
-extern int errno;
-int sending_rejected = 0;
-pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to update seat values
+
 
 void printUsageMessage() {
     printf("\nWrong number of arguments!\n");
-    printf("./\n");
+    printf("Usage: gerador <number of orders> <max usage time>\n");
     printf("Number of orders : is the total number of orders generated throughout the execution of the program. If that number is reached the program stops.\n");
     printf("Max usage time : is the maximum time a user can stay inside a sauna.\n\n");
-}
-
-void writeSynced(int fd, void *buf, size_t size) {
-    pthread_mutex_lock(&mut);
-    write(fd, buf, size);
-    pthread_mutex_unlock(&mut);
 }
 
 void* threadOrders()
 {   
     int maxIdDigits = findn(max_number_orders);
     int maxUsageDigits = findn(max_usage_time);
-    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
 
     /* Send print constraints to Sauna */
-    writeSynced(fd_order_fifo, &maxIdDigits,sizeof(maxIdDigits));
-    writeSynced(fd_order_fifo, &maxUsageDigits,sizeof(maxUsageDigits));
+    write(fd_order_fifo, &maxIdDigits,sizeof(maxIdDigits));
+    write(fd_order_fifo, &maxUsageDigits,sizeof(maxUsageDigits));
 
     for (size_t i = 0; i < max_number_orders; i++) {
-
-
-        while(sending_rejected);
-
+        printf("Generating and sending order\n");
         /* Generate random orders */
         Order* ord = malloc(sizeof(Order));
 
@@ -74,7 +67,7 @@ void* threadOrders()
         ord->serial_number = ++total_orders;
         
         /* Write messages to the Order FIFO */
-        writeSynced(fd_order_fifo, ord, sizeof(Order));
+        write(fd_order_fifo, ord, sizeof(Order));
 
         /* Write messages to register */
 
@@ -92,19 +85,13 @@ void* threadOrders()
         free(ord);
         ord = NULL;
     }
-
-    close(fd_order_fifo);
-    //sleep(250*1000);
     return NULL;
 }
 
 
-void processRejectedOrder(Order* ord) {
-    int fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
-
-    sending_rejected = 1;
-
+void processRejectedOrder(Order* ord) {    
     /* Get Elapsed time */
+    printf("Received rejected order\n");
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
     int maxIdDigits = findn(max_number_orders);
@@ -115,7 +102,7 @@ void processRejectedOrder(Order* ord) {
     fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
-    fprintf(fp_register, "REJEITADO ");
+    fprintf(fp_register, "REJEITADO\n");
 
     if (ord->gender == 'M') {
         rejected_received_M++;
@@ -125,14 +112,14 @@ void processRejectedOrder(Order* ord) {
     }
 
     if (ord->rejected < 3) {
-        writeSynced(fd_order_fifo, ord, sizeof(Order));
+        printf("Sending rejected order\n");
+        write(fd_order_fifo, ord, sizeof(Order));
     }
         /* ORDERS TO BE DISCARDED */
     else {
+        printf("Discarding rejected order\n");
         /* Get Elapsed time */
         double delta_time = (getCurrentTime() - start_time) / 1000;
-
-        printf("DISCARDED!!!!\n");
 
         fprintf(fp_register, "%.2f - ", delta_time);
         fprintf(fp_register, "%ld - ", gettid());
@@ -148,10 +135,6 @@ void processRejectedOrder(Order* ord) {
             rejected_discarded_F++;
         }
     }
-    sleep(1);
-    close(fd_order_fifo);
-
-    sending_rejected = 0;
 }
 
 
@@ -162,8 +145,6 @@ void* rejectedThread()
     while(readOrder(rej_fifo_fd, ord)) {
         processRejectedOrder(ord);
     }
-
-    //usleep(500*1000);
     free(ord);
     return NULL;
 }
@@ -179,6 +160,7 @@ pthread_t receiveRejected() {
     pthread_create(&pth,NULL,rejectedThread,NULL);
     return pth;
 }
+
 
 void statsGeneratedGerador() {
     printf("\n-------- FINAL STATS GENERATED FOR GERADOR -----------\n");
@@ -199,51 +181,56 @@ int main(int argc, char *argv[]) {
     /* Defines a differend random seed */
     int seed = time(NULL);
     srand(seed);
-    
-    /* Gets starting time of the program */
-    gettimeofday(&tv, NULL);
-    start_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
 
     /* Parse command-line arguments to global variables */
     max_number_orders = atoi(argv[1]);
     max_usage_time = atoi(argv[2]);
 
     /* Create Order FIFO */
+    printf("Creating Order FIFO\n");
     char* orderFIFO = ORDER_FIFO;
-    if(mkfifo(orderFIFO, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
-        perror("Couldn't Generate order FIFO");
-        exit(-1);
-    }
+    mkfifo(orderFIFO, 0660);
+    fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
+    
+    /* Create Rejected FIFO */
+    printf("Creating Rejected FIFO\n");
+    char* rejectedFIFO = REJECTED_FIFO;
+    mkfifo(rejectedFIFO, 0660);
+    rej_fifo_fd=open(REJECTED_FIFO, O_RDONLY);
     
     /* Create register file */
+    printf("Creating register file\n");
     char path_reg[16];
     sprintf(path_reg, "/tmp/ger.%d\n", getpid());
     fp_register = fopen(path_reg, "w");
-
+    
+    /* Gets starting time of the program */
+    printf("Starting counting time\n");
+    gettimeofday(&tv, NULL);
+    start_time = (tv.tv_sec) * 1000000 + (tv.tv_usec);
+    
     /* Generate orders */
+    printf("Starting generate orders thread\n");
     pthread_t gen_pth = generateOrders();
-
-    do
-    {
-        printf("Opening Rejected FIFO...\n");
-        rej_fifo_fd=open(REJECTED_FIFO ,O_RDONLY);
-        if (rej_fifo_fd == -1) sleep(1);
-    } while (rej_fifo_fd == -1);
-    printf("REJECTED FIFO OPENED\n");
-
+    
+    /* Listens for rejected orders */
+    printf("Starting receive rejected thread\n");
     pthread_t rej_pth = receiveRejected();
-
+    
     pthread_join(gen_pth, NULL);
+    printf("Generate orders thread ended\n");
     pthread_join(rej_pth, NULL);
+    printf("Receive rejectec thread ended\n");
 
     statsGeneratedGerador();
 
-    /* Cleanup */
-    unlink(orderFIFO);
+    /* unlink fifos */
     fclose(fp_register);
+    close(fd_order_fifo);
     close(rej_fifo_fd);
-    //close(fd_order_fifo);
-
+    unlink(orderFIFO);
+    unlink(rejectedFIFO);
     pthread_exit(NULL);
+
     return 0;
 }
