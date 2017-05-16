@@ -189,20 +189,38 @@ int main(int argc, char *argv[]) {
     /* Create Order FIFO */
     printf("Creating Order FIFO\n");
     char* orderFIFO = ORDER_FIFO;
-    mkfifo(orderFIFO, 0660);
+    //mkfifo(orderFIFO, 0660);
+
+    if(mkfifo(ORDER_FIFO, S_IRUSR | S_IWUSR) != 0){
+        if (errno != EEXIST) { //file already exists
+            perror("Error while creating order fifo");
+            exit(-1);
+        }
+    }
     fd_order_fifo = open(ORDER_FIFO, O_WRONLY);
     
     /* Create Rejected FIFO */
     printf("Creating Rejected FIFO\n");
     char* rejectedFIFO = REJECTED_FIFO;
-    mkfifo(rejectedFIFO, 0660);
+    //mkfifo(rejectedFIFO, 0660);
+    if(mkfifo(rejectedFIFO, S_IRUSR | S_IWUSR) != 0){
+        if (errno != EEXIST) { //file already exists
+            perror("Error while creating rejected fifo");
+            exit(-1);
+        }
+    }
     rej_fifo_fd=open(REJECTED_FIFO, O_RDONLY);
-    
+
     /* Create register file */
     printf("Creating register file\n");
     char path_reg[16];
     sprintf(path_reg, "/tmp/ger.%d\n", getpid());
     fp_register = fopen(path_reg, "w");
+
+    if (fp_register == NULL) {
+        perror("Register file wasn't created for gerador.");
+        exit(1);
+    }
     
     /* Gets starting time of the program */
     printf("Starting counting time\n");

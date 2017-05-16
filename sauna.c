@@ -105,7 +105,7 @@ void end() {
     exit (0);
 }
 
-void tryEnd() {
+void* tryEnd(void* arg) {
     printf("Checking if is empty\n");
     if(isEmpty()) {
         sleep(1);
@@ -113,6 +113,7 @@ void tryEnd() {
             end();            
         }
     }
+    return NULL;
 }
 
 void* runOrder(void *arg) {
@@ -248,6 +249,11 @@ int main(int argc, char *argv[]) {
     char path_reg[16];
     sprintf(path_reg, "/tmp/bal.%d\n", getpid());
     fp_register = fopen(path_reg, "w");
+
+    if (fp_register == NULL) {
+        perror("Register file wasn't created for sauna.");
+        exit(1);
+    }
 
     /* Array to hold all threads created */ 
     seats_threads = malloc(number_seats * sizeof(SeatThread));

@@ -9,7 +9,7 @@ typedef struct {
 int readOrder(int fd, Order *ord) {
     int n;
     n = read(fd,ord,sizeof(Order));
-    printf("READORDER : %d\n",n);
+    //printf("READORDER : %d\n",n);
     return n > 0;
 }
 
