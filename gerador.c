@@ -21,6 +21,7 @@ unsigned int total_orders = 0;
 unsigned int max_number_orders;
 unsigned int max_usage_time;
 FILE* fp_register;
+pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to write register file
 double start_time;
 
 int fd_order_fifo;
@@ -74,12 +75,14 @@ void* threadOrders()
         /* Get Elapsed time */
         double delta_time = (getCurrentTime() - start_time) / 1000;
 
-        fprintf(fp_register, "%.2f - ", delta_time);
+        fprintf(fp_register, "%9.2f - %ld - %*d: %c - %*d - PEDIDO\n", delta_time, gettid(), 
+                3, ord->serial_number, ord->gender, 6, ord->time_spent);
+        /*fprintf(fp_register, "%.2f - ", delta_time);
         fprintf(fp_register, "%ld - ", gettid());
         fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
         fprintf(fp_register, "%c ", ord->gender);
         fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
-        fprintf(fp_register, "PEDIDO\n");
+        fprintf(fp_register, "PEDIDO\n");*/
         
         /* Cleanup order */
         free(ord);
@@ -94,15 +97,14 @@ void processRejectedOrder(Order* ord) {
     printf("Received rejected order\n");
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
-    int maxIdDigits = findn(max_number_orders);
-    int maxUsageDigits = findn(max_usage_time);
-
-    fprintf(fp_register, "%.2f - ", delta_time);
+    fprintf(fp_register, "%9.2f - %ld - %*d: %c - %*d - REJEITADO\n", delta_time, gettid(), 
+            3, ord->serial_number, ord->gender, 6, ord->time_spent);
+    /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
     fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
-    fprintf(fp_register, "REJEITADO\n");
+    fprintf(fp_register, "REJEITADO\n");*/
 
     if (ord->gender == 'M') {
         rejected_received_M++;
@@ -120,13 +122,15 @@ void processRejectedOrder(Order* ord) {
         printf("Discarding rejected order\n");
         /* Get Elapsed time */
         double delta_time = (getCurrentTime() - start_time) / 1000;
-
-        fprintf(fp_register, "%.2f - ", delta_time);
+        
+        fprintf(fp_register, "%9.2f - %ld - %*d: %c - %*d - DESCARTADO\n", delta_time, gettid(), 
+                3, ord->serial_number, ord->gender, 6, ord->time_spent);
+        /*fprintf(fp_register, "%.2f - ", delta_time);
         fprintf(fp_register, "%ld - ", gettid());
         fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
         fprintf(fp_register, "%c ", ord->gender);
         fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
-        fprintf(fp_register, "DESCARTADO\n");
+        fprintf(fp_register, "DESCARTADO\n");*/
 
         if (ord->gender == 'M') {
             rejected_discarded_M++;
@@ -184,7 +188,15 @@ int main(int argc, char *argv[]) {
 
     /* Parse command-line arguments to global variables */
     max_number_orders = atoi(argv[1]);
+   if (max_number_orders < 0 || max_number_orders > MAX_NUMBER_OF_ORDERS) {
+        printf("Error on max number of orders, must be between 0 and 30000.\n");
+        exit(1);
+    }
     max_usage_time = atoi(argv[2]);
+    if (max_usage_time < 0 || max_usage_time > MAX_USAGE_TIME) {
+        printf("Error on max usage time, must be between 0 and 999999.\n");
+        exit(1);
+    }
 
     /* Create Order FIFO */
     printf("Creating Order FIFO\n");
@@ -193,7 +205,7 @@ int main(int argc, char *argv[]) {
 
     if(mkfifo(ORDER_FIFO, S_IRUSR | S_IWUSR) != 0){
         if (errno != EEXIST) { //file already exists
-            perror("Error while creating order fifo");
+            perror("Error while creating Order FIFO!\n");
             exit(-1);
         }
     }
@@ -205,7 +217,7 @@ int main(int argc, char *argv[]) {
     //mkfifo(rejectedFIFO, 0660);
     if(mkfifo(rejectedFIFO, S_IRUSR | S_IWUSR) != 0){
         if (errno != EEXIST) { //file already exists
-            perror("Error while creating rejected fifo");
+            perror("Error while creating Rejected FIFO.\n");
             exit(-1);
         }
     }
@@ -218,9 +230,13 @@ int main(int argc, char *argv[]) {
     fp_register = fopen(path_reg, "w");
 
     if (fp_register == NULL) {
-        perror("Register file wasn't created for gerador.");
+        perror("Register file wasn't created for gerador.\n");
         exit(1);
     }
+    
+    /* Write file header */
+    fprintf(fp_register, "   inst   – pid –   p: g –   dur  –   tip\n");
+    fprintf(fp_register, "------------------------------------------------\n");
     
     /* Gets starting time of the program */
     printf("Starting counting time\n");
@@ -238,7 +254,7 @@ int main(int argc, char *argv[]) {
     pthread_join(gen_pth, NULL);
     printf("Generate orders thread ended\n");
     pthread_join(rej_pth, NULL);
-    printf("Receive rejectec thread ended\n");
+    printf("Receive rejecte thread ended\n");
 
     statsGeneratedGerador();
 

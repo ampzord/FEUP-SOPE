@@ -13,10 +13,11 @@
 #include "type.h"
 #include "consts.h"
 
+#define MAX_NUM_RETRIES 10
+
 extern int errno;
 unsigned int number_seats;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to update seat values
-pthread_mutex_t mut_add = PTHREAD_MUTEX_INITIALIZER; // Mutex to assign seat
 SeatThread *seats_threads = NULL; // Array to hold all the seat threads
 char curr_gender; // Char to hold the current type
 
@@ -106,13 +107,14 @@ void end() {
 }
 
 void* tryEnd(void* arg) {
-    printf("Checking if is empty\n");
+    printf("Checking if room is empty\n");
     if(isEmpty()) {
         sleep(1);
         if (isEmpty()) {
             end();            
         }
     }
+    printf("Room not empty, waiting on other threads...\n");
     return NULL;
 }
 
@@ -141,12 +143,14 @@ pthread_t acceptOrder(Order *ord, int idx) {
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
-    fprintf(fp_register, "%.2f - ", delta_time);
+    fprintf(fp_register, "%9.2f - %ld - %ld - %*d: %c - %*d - SERVIDO\n", delta_time, getpid(), gettid(),
+           max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
+    /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
     fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
-    fprintf(fp_register, "SERVIDO\n");
+    fprintf(fp_register, "SERVIDO\n");*/
 
 
     if (ord->gender == 'M') {
@@ -173,12 +177,14 @@ void rejectOrder(Order *ord) {
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
-    fprintf(fp_register, "%.2f - ", delta_time);
+    fprintf(fp_register, "%9.2f - %ld - %ld - %*d: %c - %*d - REJEITADO\n", delta_time, getpid(), gettid(),
+           max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
+    /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
     fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
-    fprintf(fp_register, "REJEITADO\n");
+    fprintf(fp_register, "REJEITADO\n");*/
 
     if (ord->gender == 'M') {
         rejected_orders_M++;
@@ -202,12 +208,14 @@ void processOrder(Order *ord) {
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
-    fprintf(fp_register, "%.2f - ", delta_time);
+    fprintf(fp_register, "%9.2f - %ld - %ld - %*d: %c - %*d - RECEBIDO\n", delta_time, getpid(), gettid(),
+           max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
+    /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
     fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
     fprintf(fp_register, "%c ", ord->gender);
     fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
-    fprintf(fp_register, "RECEBIDO\n");
+    fprintf(fp_register, "RECEBIDO\n");*/
 
     /* Wait for empty seats */
     while (getEmptySeats() == 0) usleep(500*1000);
@@ -244,14 +252,8 @@ int main(int argc, char *argv[]) {
 
     /* Parse command-line arguments to global variables */
     number_seats = atoi(argv[1]);
-
-    /* Create register file */
-    char path_reg[16];
-    sprintf(path_reg, "/tmp/bal.%d\n", getpid());
-    fp_register = fopen(path_reg, "w");
-
-    if (fp_register == NULL) {
-        perror("Register file wasn't created for sauna.");
+    if (number_seats < 0 || number_seats > MAX_NUMBER_OF_SEATS) {
+        printf("Error on max number of seats, must be between 0 and 30000.\n");
         exit(1);
     }
 
@@ -262,19 +264,43 @@ int main(int argc, char *argv[]) {
     /* Frees mutex from possible previous lock */
     pthread_mutex_unlock(&mut);
     
+    unsigned int try = 1;
     do
     {
-        printf("Opening Order FIFO...\n");
+        if (try >= MAX_NUM_RETRIES) {
+            perror("Can't open Order FIFO (Number of retries exceeded)!\n");
+            exit(1);
+        }
+        printf("Opening Order FIFO (%d of %d)...\n", try++, MAX_NUM_RETRIES);
         fd=open(ORDER_FIFO, O_RDONLY);
         if (fd == -1) sleep(1);
     } while (fd == -1);
     printf("Order FIFO found\n");
     
+    /* Create register file */
+    char path_reg[16];
+    sprintf(path_reg, "/tmp/bal.%d\n", getpid());
+    fp_register = fopen(path_reg, "w");
+
+    if (fp_register == NULL) {
+        perror("Register file wasn't created for sauna.\n");
+        exit(1);
+    }
+    
+    /* Write file header */
+    fprintf(fp_register, "   inst   – pid – tid -  p: g – dur  – tip\n");
+    fprintf(fp_register, "------------------------------------------------\n");
+
     sleep(1);
     
+    try = 1;
     do
     {
-        printf("Opening Rejected FIFO...\n");
+        if (try >= MAX_NUM_RETRIES) {
+            perror("Can't open Rejected FIFO (Number of retries exceeded)!\n");
+            exit(1);
+        }
+        printf("Opening Rejected FIFO (%d of %d)...\n", try++, MAX_NUM_RETRIES);
         fd_rejected_fifo=open(ORDER_FIFO, O_WRONLY);
         if (fd_rejected_fifo == -1) sleep(1);
     } while (fd_rejected_fifo == -1);
