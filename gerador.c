@@ -21,7 +21,6 @@ unsigned int total_orders = 0;
 unsigned int max_number_orders;
 unsigned int max_usage_time;
 FILE* fp_register;
-pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER; // Mutex to write register file
 double start_time;
 
 int fd_order_fifo;
@@ -77,12 +76,6 @@ void* threadOrders()
 
         fprintf(fp_register, "%9.2f - %ld - %*d: %c - %*d - PEDIDO\n", delta_time, gettid(), 
                 3, ord->serial_number, ord->gender, 6, ord->time_spent);
-        /*fprintf(fp_register, "%.2f - ", delta_time);
-        fprintf(fp_register, "%ld - ", gettid());
-        fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
-        fprintf(fp_register, "%c ", ord->gender);
-        fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
-        fprintf(fp_register, "PEDIDO\n");*/
         
         /* Cleanup order */
         free(ord);
@@ -99,13 +92,7 @@ void processRejectedOrder(Order* ord) {
 
     fprintf(fp_register, "%9.2f - %ld - %*d: %c - %*d - REJEITADO\n", delta_time, gettid(), 
             3, ord->serial_number, ord->gender, 6, ord->time_spent);
-    /*fprintf(fp_register, "%.2f - ", delta_time);
-    fprintf(fp_register, "%ld - ", gettid());
-    fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
-    fprintf(fp_register, "%c ", ord->gender);
-    fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
-    fprintf(fp_register, "REJEITADO\n");*/
-
+    
     if (ord->gender == 'M') {
         rejected_received_M++;
     }
@@ -125,12 +112,6 @@ void processRejectedOrder(Order* ord) {
         
         fprintf(fp_register, "%9.2f - %ld - %*d: %c - %*d - DESCARTADO\n", delta_time, gettid(), 
                 3, ord->serial_number, ord->gender, 6, ord->time_spent);
-        /*fprintf(fp_register, "%.2f - ", delta_time);
-        fprintf(fp_register, "%ld - ", gettid());
-        fprintf(fp_register, "%*d: ", maxIdDigits, ord->serial_number);
-        fprintf(fp_register, "%c ", ord->gender);
-        fprintf(fp_register, "%*d ", maxUsageDigits, ord->time_spent);
-        fprintf(fp_register, "DESCARTADO\n");*/
 
         if (ord->gender == 'M') {
             rejected_discarded_M++;
@@ -201,7 +182,6 @@ int main(int argc, char *argv[]) {
     /* Create Order FIFO */
     printf("Creating Order FIFO\n");
     char* orderFIFO = ORDER_FIFO;
-    //mkfifo(orderFIFO, 0660);
 
     if(mkfifo(ORDER_FIFO, S_IRUSR | S_IWUSR) != 0){
         if (errno != EEXIST) { //file already exists
@@ -214,7 +194,6 @@ int main(int argc, char *argv[]) {
     /* Create Rejected FIFO */
     printf("Creating Rejected FIFO\n");
     char* rejectedFIFO = REJECTED_FIFO;
-    //mkfifo(rejectedFIFO, 0660);
     if(mkfifo(rejectedFIFO, S_IRUSR | S_IWUSR) != 0){
         if (errno != EEXIST) { //file already exists
             perror("Error while creating Rejected FIFO.\n");
