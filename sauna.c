@@ -125,8 +125,11 @@ void* runOrder(void *arg) {
     int idx = targ.idx;
     unsigned int time_ms = targ.time_ms;
 
-    pthread_t self_id=pthread_self();
-    printf("\nINSIDE thread RUN ORDER %lu\n",self_id);
+    /* Get Elapsed time */
+    double delta_time = (getCurrentTime() - start_time) / 1000;
+
+    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - SERVIDO\n", delta_time, getpid(), gettid(),
+            max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
     
     /* Waits for the given ammount of time */
     while(time_ms-- >0) usleep(1000);
@@ -143,22 +146,6 @@ void* runOrder(void *arg) {
 pthread_t acceptOrder(Order *ord, int idx) {
 
     /* Write messages to register */
-
-    /* Get Elapsed time */
-    double delta_time = (getCurrentTime() - start_time) / 1000;
-
-    pthread_t self_id=pthread_self();
-    printf("\nHello from thread %lu\n",self_id);
-
-    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - SERVIDO\n", delta_time, getpid(), syscall(SYS_gettid),
-           max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
-    /*fprintf(fp_register, "%.2f - ", delta_time);
-    fprintf(fp_register, "%ld - ", gettid());
-    fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
-    fprintf(fp_register, "%c ", ord->gender);
-    fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
-    fprintf(fp_register, "SERVIDO\n");*/
-
 
     if (ord->gender == 'M') {
         served_orders_M++;
@@ -184,17 +171,8 @@ void rejectOrder(Order *ord) {
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
-    pthread_t self_id=pthread_self();
-    printf("\nHello from thread %lu\n",self_id);
-
-    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - REJEITADO\n", delta_time, getpid(), syscall(SYS_gettid),
+    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - REJEITADO\n", delta_time, getpid(), gettid(),
            max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
-    /*fprintf(fp_register, "%.2f - ", delta_time);
-    fprintf(fp_register, "%ld - ", gettid());
-    fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
-    fprintf(fp_register, "%c ", ord->gender);
-    fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
-    fprintf(fp_register, "REJEITADO\n");*/
 
     if (ord->gender == 'M') {
         rejected_orders_M++;
@@ -218,17 +196,8 @@ void processOrder(Order *ord) {
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
-    pthread_t self_id=pthread_self();
-    printf("\nHello from thread %lu\n",self_id);
-
-    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - RECEBIDO\n", delta_time, getpid(), syscall(SYS_gettid),
+    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - RECEBIDO\n", delta_time, getpid(), gettid(),
            max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
-    /*fprintf(fp_register, "%.2f - ", delta_time);
-    fprintf(fp_register, "%ld - ", gettid());
-    fprintf(fp_register, "%*d: ", max_number_orders, ord->serial_number);
-    fprintf(fp_register, "%c ", ord->gender);
-    fprintf(fp_register, "%*d ", max_usage_time, ord->time_spent);
-    fprintf(fp_register, "RECEBIDO\n");*/
 
     /* Wait for empty seats */
     while (getEmptySeats() == 0) usleep(500*1000);
