@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <syscall.h>
 
 #include "type.h"
 #include "consts.h"
@@ -123,6 +124,9 @@ void* runOrder(void *arg) {
     ThreadArg targ = *((ThreadArg *) arg);
     int idx = targ.idx;
     unsigned int time_ms = targ.time_ms;
+
+    pthread_t self_id=pthread_self();
+    printf("\nINSIDE thread RUN ORDER %lu\n",self_id);
     
     /* Waits for the given ammount of time */
     while(time_ms-- >0) usleep(1000);
@@ -146,7 +150,7 @@ pthread_t acceptOrder(Order *ord, int idx) {
     pthread_t self_id=pthread_self();
     printf("\nHello from thread %lu\n",self_id);
 
-    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - SERVIDO\n", delta_time, getpid(), gettid(),
+    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - SERVIDO\n", delta_time, getpid(), syscall(SYS_gettid),
            max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
     /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
@@ -183,7 +187,7 @@ void rejectOrder(Order *ord) {
     pthread_t self_id=pthread_self();
     printf("\nHello from thread %lu\n",self_id);
 
-    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - REJEITADO\n", delta_time, getpid(), gettid(),
+    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - REJEITADO\n", delta_time, getpid(), syscall(SYS_gettid),
            max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
     /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
@@ -217,7 +221,7 @@ void processOrder(Order *ord) {
     pthread_t self_id=pthread_self();
     printf("\nHello from thread %lu\n",self_id);
 
-    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - RECEBIDO\n", delta_time, getpid(), gettid(),
+    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - RECEBIDO\n", delta_time, getpid(), syscall(SYS_gettid),
            max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
     /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
