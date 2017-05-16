@@ -143,7 +143,10 @@ pthread_t acceptOrder(Order *ord, int idx) {
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
-    fprintf(fp_register, "%9.2f - %ld - %ld - %*d: %c - %*d - SERVIDO\n", delta_time, getpid(), gettid(),
+    pthread_t self_id=pthread_self();
+    printf("\nHello from thread %lu\n",self_id);
+
+    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - SERVIDO\n", delta_time, getpid(), gettid(),
            max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
     /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
@@ -177,7 +180,10 @@ void rejectOrder(Order *ord) {
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
-    fprintf(fp_register, "%9.2f - %ld - %ld - %*d: %c - %*d - REJEITADO\n", delta_time, getpid(), gettid(),
+    pthread_t self_id=pthread_self();
+    printf("\nHello from thread %lu\n",self_id);
+
+    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - REJEITADO\n", delta_time, getpid(), gettid(),
            max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
     /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
@@ -208,7 +214,10 @@ void processOrder(Order *ord) {
     /* Get Elapsed time */
     double delta_time = (getCurrentTime() - start_time) / 1000;
 
-    fprintf(fp_register, "%9.2f - %ld - %ld - %*d: %c - %*d - RECEBIDO\n", delta_time, getpid(), gettid(),
+    pthread_t self_id=pthread_self();
+    printf("\nHello from thread %lu\n",self_id);
+
+    fprintf(fp_register, "%9.2f - %u - %ld - %*d: %c - %*d - RECEBIDO\n", delta_time, getpid(), gettid(),
            max_number_orders, ord->serial_number, ord->gender, max_usage_time, ord->time_spent);
     /*fprintf(fp_register, "%.2f - ", delta_time);
     fprintf(fp_register, "%ld - ", gettid());
@@ -264,14 +273,14 @@ int main(int argc, char *argv[]) {
     /* Frees mutex from possible previous lock */
     pthread_mutex_unlock(&mut);
     
-    unsigned int try = 1;
+    unsigned int tries = 1;
     do
     {
-        if (try >= MAX_NUM_RETRIES) {
+        if (tries >= MAX_NUM_RETRIES) {
             perror("Can't open Order FIFO (Number of retries exceeded)!\n");
             exit(1);
         }
-        printf("Opening Order FIFO (%d of %d)...\n", try++, MAX_NUM_RETRIES);
+        printf("Opening Order FIFO (%d of %d)...\n", tries++, MAX_NUM_RETRIES);
         fd=open(ORDER_FIFO, O_RDONLY);
         if (fd == -1) sleep(1);
     } while (fd == -1);
@@ -293,14 +302,14 @@ int main(int argc, char *argv[]) {
 
     sleep(1);
     
-    try = 1;
+    tries = 1;
     do
     {
-        if (try >= MAX_NUM_RETRIES) {
+        if (tries >= MAX_NUM_RETRIES) {
             perror("Can't open Rejected FIFO (Number of retries exceeded)!\n");
             exit(1);
         }
-        printf("Opening Rejected FIFO (%d of %d)...\n", try++, MAX_NUM_RETRIES);
+        printf("Opening Rejected FIFO (%d of %d)...\n", tries++, MAX_NUM_RETRIES);
         fd_rejected_fifo=open(ORDER_FIFO, O_WRONLY);
         if (fd_rejected_fifo == -1) sleep(1);
     } while (fd_rejected_fifo == -1);
