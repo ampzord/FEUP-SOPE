@@ -1,5 +1,23 @@
-# FEUP-SOPE
+FEUP-SOPE
+============
+Repository for Operating Systems class @ FEUP.
 
-https://imgur.com/m5l7B4R.png
+Sauna allocation Project using FIFO and Threads.
 
-gerador https://imgur.com/gJN5lz8.png
+---
+
+## Usage
+
+```sh
+./sauna <number_of_seats>
+```
+
+```sh
+./gerador <number_of_orders> <max_usage_time>
+```
+
+---
+
+## License
+
+This project is licensed under the terms of the **MIT** [license](https://github.com/ampzord/FEUP-SOPE/blob/master/LICENSE).
